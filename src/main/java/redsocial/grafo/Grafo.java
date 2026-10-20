@@ -67,6 +67,12 @@ public final class Grafo {
      *
      * <p>El vínculo tiene un solo sentido: agregar {@code A -> B} no habilita {@code B -> A}.</p>
      *
+     * <p><b>Un solo vínculo por par ordenado.</b> Si el par {@code (origen, destino)} ya tenía un
+     * vínculo, se conserva el de <b>menor</b> tiempo: uno más lento nunca puede mejorar una cadena de
+     * difusión (los tiempos se suman a lo largo de la cadena), así que guardarlo solo generaría
+     * cadenas duplicadas con los mismos usuarios y un tiempo peor. Si el tiempo nuevo es menor,
+     * reemplaza al anterior; si es mayor o igual, se descarta.</p>
+     *
      * @param origen  usuario que transmite
      * @param destino usuario que recibe
      * @param minutos tiempo estimado de transmisión; tiene que ser positivo
@@ -82,7 +88,17 @@ public final class Grafo {
         }
         int desde = agregarUsuario(origen);
         int hasta = agregarUsuario(destino);
-        adyacencia.get(desde).add(new Arista(hasta, minutos));
+        List<Arista> salientes = adyacencia.get(desde);
+        for (int i = 0; i < salientes.size(); i++) {
+            if (salientes.get(i).destino() == hasta) {
+                // El par ya tenía un vínculo: se queda el de menor tiempo.
+                if (minutos < salientes.get(i).minutos()) {
+                    salientes.set(i, new Arista(hasta, minutos));
+                }
+                return;
+            }
+        }
+        salientes.add(new Arista(hasta, minutos));
     }
 
     /** Cantidad de usuarios dados de alta en la red. */
