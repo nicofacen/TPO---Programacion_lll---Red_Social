@@ -1,0 +1,131 @@
+PROGRAMACION III: TRABAJO PRACTICO OBLIGATORIO
+Consigna general
+Cada equipo deberá desarrollar en Java una de las propuestas presentadas e 
+implementar:
+ Las tres funcionalidades obligatorias de la primera etapa.
+ Tres funcionalidades adicionales, elegidas entre las siete alternativas de la 
+segunda etapa: una del bloque A y dos del bloque B.
+Para cada funcionalidad, el equipo deberá:
+1. Analizar los datos, las restricciones y el objetivo del problema.
+2. Seleccionar una estrategia de diseño de algoritmos estudiada en la materia.
+3. Justificar por qué la estrategia elegida resulta adecuada.
+4. Implementar el algoritmo y mostrar la solución obtenida.
+5. Verificar los resultados mediante casos de prueba.
+6. Analizar su complejidad temporal.
+El conjunto de soluciones deberá incluir la aplicación de Divide y Conquista, 
+Greedy, Programación Dinámica y Backtracking. La identificación de qué 
+estrategia corresponde a cada problema forma parte del trabajo.
+No será suficiente mencionar y justificar una estrategia en el informe: deberá 
+reconocerse su aplicación en el algoritmo implementado.
+
+PROPUESTA 1 — RED SOCIAL UNIVERSITARIA PARA LA 
+COLABORACIÓN
+Una universidad desea desarrollar una plataforma para conectar estudiantes, difundir 
+oportunidades académicas y organizar actividades y equipos de trabajo. El sistema 
+administrará usuarios, publicaciones, vínculos entre usuarios e iniciativas universitarias.
+Primera etapa: funcionalidades obligatorias
+1. Organización del muro de publicaciones
+Cada publicación posee un identificador, autor, fecha y hora, cantidad de reacciones y 
+cantidad de comentarios.
+El sistema deberá permitir consultar las publicaciones:
+ Desde la más reciente hasta la más antigua.
+ Desde la más relevante hasta la menos relevante.
+En caso de empate, se priorizará la publicación más reciente y, luego, el identificador 
+menor.
+Se deberá implementar un procedimiento de ordenamiento adecuado para trabajar con 
+volúmenes crecientes de publicaciones, sin utilizar métodos de ordenamiento provistos 
+por Java. El equipo deberá explicar cómo funciona y analizar su complejidad temporal.
+2. Cadena de difusión más rápida
+Una convocatoria puede transmitirse entre usuarios mediante diferentes cadenas de 
+contactos. Cada vínculo habilitado tiene un sentido de transmisión y un tiempo estimado 
+positivo, expresado en minutos.
+Dados un usuario de origen y uno de destino, el sistema deberá determinar:
+ La cadena que permita transmitir la convocatoria en el menor tiempo total.
+ Los usuarios que integran esa cadena.
+ El tiempo total estimado.
+Los tiempos de los vínculos se consideran fijos y se suman a lo largo de la cadena. Si el 
+destino no es alcanzable, el sistema deberá informarlo.
+También deberá permitir visualizar las principales decisiones tomadas durante el 
+cálculo.
+3. Selección de iniciativas para financiar
+La universidad dispone de un presupuesto limitado para financiar iniciativas publicadas 
+en la plataforma.
+Cada iniciativa posee un identificador, un costo entero positivo y un puntaje de impacto 
+entero no negativo. Una iniciativa podrá financiarse una sola vez y deberá recibir la 
+totalidad del dinero solicitado.
+El sistema deberá seleccionar el conjunto de iniciativas que alcance el mayor impacto 
+total posible, sin superar el presupuesto disponible.
+Deberá mostrar las iniciativas seleccionadas, el costo total, el impacto obtenido y el 
+presupuesto restante.
+Segunda etapa: funcionalidades de elección obligatoria
+Elegir una del bloque A y dos del bloque B.
+Bloque A
+A1. Consultas de difusión entre todos los usuarios
+La plataforma necesita responder numerosas consultas sobre el menor tiempo de 
+transmisión entre distintos pares de usuarios.
+El sistema deberá realizar un procesamiento inicial de la red y conservar los resultados 
+necesarios para consultar posteriormente el tiempo mínimo y la cadena correspondiente, 
+sin repetir todo el cálculo para cada consulta.
+Deberá contemplar pares de usuarios entre los cuales no exista una cadena de difusión.
+A2. Asignación de tutores a grupos
+Se dispone de igual cantidad de tutores y grupos, con un máximo inicial de diez de cada 
+uno. Para cada combinación tutor–grupo se conoce un costo de asignación. Algunas 
+combinaciones están prohibidas.
+Cada grupo deberá recibir exactamente un tutor y cada tutor podrá atender un solo 
+grupo.
+El sistema deberá encontrar una asignación completa que minimice el costo total, 
+mostrarla e informar cuando no exista una asignación válida.
+A3. Selección de actividades compatibles
+Cada actividad posee una hora de inicio, una hora de finalización y un puntaje de 
+interés.
+El sistema deberá seleccionar actividades que no se superpongan y cuyo interés total sea 
+el mayor posible. Una actividad podrá comenzar en el mismo momento en que finaliza 
+otra.
+Deberá mostrar las actividades elegidas y el interés total obtenido.
+Bloque B
+B1. Formación de equipos con restricciones
+Cada estudiante posee habilidades declaradas. Se desea formar equipos de un tamaño 
+determinado que cubran todas las habilidades requeridas.
+Además, pueden existir integrantes obligatorios y pares de estudiantes que no deban 
+integrar un mismo equipo.
+El sistema deberá encontrar y mostrar todos los equipos válidos, sin repetir el mismo 
+equipo por presentar sus integrantes en otro orden.
+B2. Organización de encuentros
+Cada encuentro tiene participantes y una cantidad de asistentes. Se dispone de aulas con 
+capacidad limitada y franjas horarias.
+El sistema deberá asignar un aula y una franja a cada encuentro, respetando que:
+ La capacidad del aula sea suficiente.
+ Un aula no albergue dos encuentros simultáneos.
+ Una persona no participe en dos encuentros en la misma franja.
+Deberá mostrar una planificación válida o indicar que las condiciones no permiten 
+organizar todos los encuentros.
+B3. Cadenas alternativas de difusión
+Dados un origen, un destino, un tiempo máximo, un límite de intermediarios y un 
+conjunto de usuarios excluidos, el sistema deberá encontrar todas las cadenas de 
+difusión que respeten esas condiciones.
+No se podrá repetir un usuario dentro de una cadena. Se deberán mostrar las cadenas 
+válidas, sus tiempos y la de menor tiempo total.
+B4. Asignación de moderadores
+Cada comunidad necesita un moderador. Cada candidato tiene un costo de asignación 
+diferente para cada comunidad, un límite de comunidades que puede atender y 
+restricciones de compatibilidad.
+El sistema deberá cubrir todas las comunidades con el menor costo total posible.
+Durante la búsqueda deberá evitar continuar con asignaciones parciales que no puedan 
+completar una solución válida o mejorar la mejor solución encontrada. El equipo deberá 
+justificar los criterios utilizados para descartar esas alternativas.
+
+
+IMPORTANTE: Seguimiento del trabajo individual y grupal
+Para realizar un seguimiento del trabajo individual y grupal el proyecto deberá 
+mantenerse en un repositorio Git compartido por todos los integrantes del equipo. A 
+través del historial de cambios se realizará un seguimiento del avance y de la 
+participación individual.
+Se valorará el progreso continuo durante el desarrollo, mediante aportes 
+significativos y distribuidos entre las distintas etapas del trabajo. Cada commit deberá 
+registrar una modificación coherente y relevante —como la implementación de una 
+funcionalidad, la corrección de un error, la incorporación de pruebas o una mejora en la 
+documentación— e incluir un mensaje que describa claramente el cambio realizado.
+Cada integrante deberá realizar sus aportes desde su propia cuenta. La valoración 
+considerará la calidad y pertinencia de las contribuciones, no únicamente la cantidad de 
+commits. No se considerará evidencia suficiente de trabajo sostenido una carga masiva 
+del proyecto próxima a la fecha de entrega
