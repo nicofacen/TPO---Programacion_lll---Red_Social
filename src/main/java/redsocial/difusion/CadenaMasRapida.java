@@ -28,6 +28,11 @@ import redsocial.grafo.Grafo;
  * no la más rápida (ignora los minutos); probar todas las cadenas posibles es factorial; Bellman-Ford
  * es O(V·E), más lento sin necesidad porque acá no hay tiempos negativos.</p>
  *
+ * <p><b>Traza de decisiones.</b> La consigna pide "visualizar las principales decisiones tomadas
+ * durante el cálculo", así que cada paso del algoritmo deja una línea en
+ * {@link ResultadoCamino#traza()}: el estado inicial, cada usuario que se fija, cada relajación
+ * evaluada (aceptada o descartada) y el cierre (destino alcanzado o inalcanzable).</p>
+ *
  * <p><b>Nota sobre la cola de prioridad.</b> El {@link Comparator} que recibe la
  * {@link PriorityQueue} no ordena ninguna colección: solo le dice al <i>heap</i> binario cuál de dos
  * candidatos es el más barato, para poder entregar el mínimo en O(log V). El ordenamiento que la
@@ -69,6 +74,9 @@ public final class CadenaMasRapida {
         }
         dist[inicio] = 0;
 
+        List<String> traza = new ArrayList<>();
+        traza.add("Inicio: tiempo[" + origen + "] = 0 y el resto de los usuarios = infinito");
+
         // Cola de prioridad {tiempo acumulado, usuario}: siempre entrega el candidato más barato.
         PriorityQueue<int[]> candidatos = new PriorityQueue<>(Comparator.comparingInt(entrada -> entrada[0]));
         candidatos.add(new int[] {0, inicio});
@@ -83,8 +91,11 @@ public final class CadenaMasRapida {
             // DECISIÓN GREEDY: de los usuarios no fijados, el de menor tiempo acumulado. Como todos los
             // vínculos tienen tiempo positivo, ese tiempo ya es el mínimo definitivo y no se revisa más.
             fijado[u] = true;
+            traza.add("Se fija a " + grafo.nombreDe(u) + " con tiempo mínimo " + dist[u]
+                    + " min (es el menor entre los usuarios no fijados)");
 
             if (u == fin) {
+                traza.add("Se alcanzó el destino " + destino + ": se corta la búsqueda");
                 break; // ya se fijó el destino: su tiempo es definitivo, no hace falta seguir
             }
 
@@ -94,19 +105,32 @@ public final class CadenaMasRapida {
                     continue;
                 }
                 int tiempoPorU = dist[u] + vinculo.minutos();
+                String encabezado = "  Relajación " + grafo.nombreDe(u) + " -> " + grafo.nombreDe(v)
+                        + " (" + vinculo.minutos() + " min): ";
                 // RELAJACIÓN: si llegar a v pasando por u es más rápido que lo mejor conocido, se mejora.
                 if (tiempoPorU < dist[v]) {
+                    traza.add(encabezado + dist[u] + " + " + vinculo.minutos() + " = " + tiempoPorU
+                            + " < " + texto(dist[v]) + " -> se actualiza tiempo[" + grafo.nombreDe(v)
+                            + "] = " + tiempoPorU);
                     dist[v] = tiempoPorU;
                     predecesor[v] = u;
                     candidatos.add(new int[] {tiempoPorU, v});
+                } else {
+                    traza.add(encabezado + tiempoPorU + " >= " + texto(dist[v]) + " -> se descarta");
                 }
             }
         }
 
         if (dist[fin] == INFINITO) {
-            return ResultadoCamino.noAlcanzable(List.of());
+            traza.add("El destino " + destino + " no es alcanzable desde " + origen);
+            return ResultadoCamino.noAlcanzable(traza);
         }
-        return new ResultadoCamino(true, dist[fin], reconstruirCadena(grafo, predecesor, fin), List.of());
+        return new ResultadoCamino(true, dist[fin], reconstruirCadena(grafo, predecesor, fin), traza);
+    }
+
+    /** Muestra un tiempo acumulado para la traza: la palabra "infinito" si todavía no se conoce ninguno. */
+    private static String texto(int tiempo) {
+        return tiempo == INFINITO ? "infinito" : String.valueOf(tiempo);
     }
 
     /**
