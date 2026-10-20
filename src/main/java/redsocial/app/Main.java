@@ -28,7 +28,7 @@ public final class Main {
         // OPCIONES[1] = new MuroConsola();
 
         // 2 · Cadena de difusión más rápida (Lucas)
-        // OPCIONES[2] = new CadenaRapidaConsola();
+        OPCIONES[2] = new CadenaRapidaConsola();
 
         // 3 · Selección de iniciativas (Fadi)
         // OPCIONES[3] = new IniciativasConsola();
