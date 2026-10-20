@@ -25,7 +25,7 @@ public final class Main {
         // Las líneas están separadas a propósito para que Git combine los cambios sin conflictos.
 
         // 1 · Muro de publicaciones (Nicolas)
-        // OPCIONES[1] = new MuroConsola();
+        OPCIONES[1] = new MuroConsola();
 
         // 2 · Cadena de difusión más rápida (Lucas)
         // OPCIONES[2] = new CadenaRapidaConsola();
