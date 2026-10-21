@@ -392,7 +392,6 @@ tamaño 3; requeridas Java, SQL, UI y Testing; obligatorio Lucia; Mateo y Sofia 
 - La salida usa solo caracteres ASCII para símbolos (`->`, `>=`, `infinito`); las tildes son válidas.
 - Tests: JUnit 5, `@DisplayName` en español, una clase `XTest` por clase `X`, azar con semilla fija, y comparación contra fuerza bruta
   donde se indique. Los tests de una persona no dependen de clases de otra, salvo `Grafo` (Lucas).
-- Commits y ramas: ver `docs/DIVISION_TAREAS.md` §5.
 
 ## 7. Cómo cambiar un contrato
 

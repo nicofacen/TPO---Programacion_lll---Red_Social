@@ -7,7 +7,6 @@ Equipo de 3: **Nicolas**, **Lucas** y **Fadi**. Java 21 · Maven · JUnit 5. Sin
 
 1. `docs/CONSIGNA.txt` — la consigna oficial. Si algo la contradice, gana la consigna.
 2. `docs/CONTRATOS.md` — interfaces compartidas entre los tres (menú, `Grafo`, líneas de salida, resultados esperados).
-3. `docs/DIVISION_TAREAS.md` y `docs/prompts/PROMPT_<NOMBRE>.md` — qué hace cada persona, en qué orden y con qué commits.
 
 ## Cómo trabajar
 
