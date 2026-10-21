@@ -2,6 +2,7 @@ package redsocial.financiamiento;
 
 import redsocial.modelo.Iniciativa;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,9 +34,14 @@ import java.util.List;
  *   dp[i][w] = max(dp[i-1][w], dp[i-1][w - costo_i] + impacto_i)       (si costo_i &lt;= w)
  * </pre>
  *
+ * <p><b>Reconstrucción.</b> La tabla solo dice <i>cuánto</i> impacto se logra, no <i>cuáles</i> iniciativas
+ * se eligieron. Para saberlo se recorre desde {@code dp[n][P]} hacia atrás: si {@code dp[i][w] != dp[i-1][w]},
+ * la celda mejoró al considerar la iniciativa {@code i}, o sea que fue elegida, y se resta su costo al
+ * presupuesto ({@code w -= costo_i}). Si son iguales, la iniciativa {@code i} no se financió.</p>
+ *
  * <p><b>Complejidad.</b> Con {@code n} iniciativas y presupuesto {@code P}, la tabla tiene
  * {@code (n+1) x (P+1)} celdas y cada una se calcula en O(1): tiempo <b>O(n · P)</b> y espacio
- * <b>O(n · P)</b>. Es <i>pseudopolinomial</i>: depende del valor numérico de {@code P}, no de la
+ * <b>O(n · P)</b> (la reconstrucción agrega solo O(n)). Es <i>pseudopolinomial</i>: depende del valor numérico de {@code P}, no de la
  * cantidad de bits necesarios para escribirlo.</p>
  */
 public final class SeleccionIniciativas {
@@ -44,6 +50,16 @@ public final class SeleccionIniciativas {
     private static final long MAXIMO_CELDAS = 100_000_000L;
 
     private SeleccionIniciativas() { }
+
+    /**
+     * Resultado de la selección.
+     *
+     * @param seleccionadas     iniciativas financiadas, en el mismo orden en que llegaron
+     * @param costoTotal        suma de los costos de las iniciativas seleccionadas
+     * @param impactoTotal      suma de los impactos de las iniciativas seleccionadas (el óptimo)
+     * @param presupuestoRestante presupuesto que sobra: {@code presupuesto - costoTotal}
+     */
+    public record Resultado(List<Iniciativa> seleccionadas, int costoTotal, int impactoTotal, int presupuestoRestante) { }
 
     /**
      * Calcula el mayor impacto total posible sin superar el presupuesto.
@@ -57,6 +73,43 @@ public final class SeleccionIniciativas {
     public static int maximoImpacto(List<Iniciativa> iniciativas, int presupuesto) {
         int[][] dp = construirTabla(iniciativas, presupuesto);
         return dp[iniciativas.size()][presupuesto];
+    }
+    /**
+     * Elige qué iniciativas financiar: llena la tabla y la recorre hacia atrás para reconstruir la solución.
+     *
+     * @param iniciativas iniciativas candidatas (cada una se puede financiar una sola vez)
+     * @param presupuesto presupuesto disponible, no negativo
+     * @return iniciativas seleccionadas, costo total, impacto total y presupuesto restante
+     * @throws IllegalArgumentException si la lista es nula, hay una iniciativa nula, el presupuesto es
+     *                                  negativo o la tabla resultante sería demasiado grande
+     */
+    public static Resultado seleccionar(List<Iniciativa> iniciativas, int presupuesto) {
+        int[][] dp = construirTabla(iniciativas, presupuesto);
+        int n = iniciativas.size();
+
+        // RECONSTRUCCIÓN: se recorre la tabla desde dp[n][presupuesto] hacia atrás
+        boolean[] elegida = new boolean[n + 1];
+        int w = presupuesto;
+        int costoTotal = 0;
+        for (int i = n; i >= 1; i--) {
+            if (dp[i][w] != dp[i - 1][w]) {
+                // la celda mejoró al considerar la iniciativa i: fue elegida
+                Iniciativa iniciativa = iniciativas.get(i - 1);
+                elegida[i] = true;
+                w -= iniciativa.costo();
+                costoTotal += iniciativa.costo();
+            }
+        }
+
+        // se arma la lista en el mismo orden en que llegaron las iniciativas
+        List<Iniciativa> seleccionadas = new ArrayList<>();
+        for (int i = 1; i <= n; i++) {
+            if (elegida[i]) {
+                seleccionadas.add(iniciativas.get(i - 1));
+            }
+        }
+        int impactoTotal = dp[n][presupuesto];
+        return new Resultado(List.copyOf(seleccionadas), costoTotal, impactoTotal, presupuesto - costoTotal);
     }
 
     /**
