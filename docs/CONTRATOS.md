@@ -287,13 +287,13 @@ Estas líneas deben aparecer **literalmente** en la salida de `--demo`. Las clas
 | 1 Muro | `Orden por recencia (ids): 6, 5, 4, 2, 3, 7, 1` |
 | 1 Muro | `Orden por relevancia (ids): 5, 2, 3, 7, 1, 4, 6` |
 | 2 Cadena más rápida | `Decisiones tomadas:` |
-| 2 Cadena más rápida | `Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina \| Tiempo total: 27 min` (en la salida real el separador es `|`) |
+| 2 Cadena más rápida | `Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina \| Tiempo total: 27 min` (en la salida real el separador es `\|`) |
 | 3 Iniciativas | `Iniciativas seleccionadas: #1, #2, #4` |
-| 3 Iniciativas | `Costo total: 45 \| Impacto obtenido: 230 \| Presupuesto restante: 5` (separadores `|`) |
+| 3 Iniciativas | `Costo total: 45 \| Impacto obtenido: 230 \| Presupuesto restante: 5` (separadores `\|`) |
 | 4 A1 | `No existe cadena de difusión de Ana a Hugo` |
 | 5 B1 | `Equipos válidos: 7` |
 | 6 B3 | `Cadenas válidas: 10` |
-| 6 B3 | `Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina \| 28 min` (separador `|`) |
+| 6 B3 | `Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina \| 28 min` (separador `\|`) |
 
 ## 5. Resultados esperados con los datos de ejemplo
 
