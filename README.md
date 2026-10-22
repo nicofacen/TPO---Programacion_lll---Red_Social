@@ -1,4 +1,4 @@
-# Red Social Universitaria para la Colaboración
+# Red Social Universitaria
 
 TP Obligatorio de **Programación III** (UADE) — Propuesta 1.
 Integrantes: **Nicolas**, **Lucas** y **Fadi**.
@@ -47,8 +47,3 @@ Bajo `src/main/java/redsocial/`:
 
 Los tests están en `src/test/java/redsocial/` con los mismos paquetes.
 
-## Notas
-
-- No se usa ningún método de ordenamiento del JDK; el muro se ordena con un Merge Sort propio.
-- Si la consola muestra mal las tildes: `java -Dstdout.encoding=UTF-8 -jar target/red-social-universitaria-1.0.0.jar`
-  (en Windows, ejecutar antes `chcp 65001`).
