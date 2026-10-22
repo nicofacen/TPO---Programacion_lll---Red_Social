@@ -254,7 +254,99 @@ No existe cadena de difusión de Ana a Hugo
 
 ## 5. Funcionalidad 3 — Selección de iniciativas para financiar (Programación Dinámica)
 
-_Pendiente — Entrega 1 — responsable: Fadi_
+### 5.1 Análisis del problema
+
+**Datos.** Una lista de `n` iniciativas candidatas, donde cada una tiene un identificador (`id`), un `costo` entero positivo (`> 0`) y un puntaje de `impacto` entero no negativo (`>= 0`), más un `presupuesto` total disponible `P >= 0`.
+
+**Restricciones.**
+
+- Cada iniciativa se puede financiar **una sola vez** y debe recibir la **totalidad** del dinero solicitado (decisión 0/1: no se puede fraccionar ni repetir).
+- La suma de los costos de las iniciativas seleccionadas no puede superar el presupuesto `P`.
+
+**Objetivo.** Seleccionar el subconjunto de iniciativas que maximice el **impacto total** sin exceder `P`, informando las iniciativas seleccionadas, el costo total, el impacto obtenido y el presupuesto restante (`P - costoTotal`).
+
+### 5.2 Estrategia elegida: Programación Dinámica (Mochila 0/1)
+
+Se modela como el problema clásico de la **mochila 0/1** resuelto con una tabla `dp` de `(n + 1) x (P + 1)` celdas, donde:
+
+- `dp[i][w]` representa el **máximo impacto alcanzable** considerando únicamente las primeras `i` iniciativas (`0 <= i <= n`) con un presupuesto disponible `w` (`0 <= w <= P`).
+- **Caso base:** `dp[0][w] = 0` para todo `w` (sin iniciativas consideradas, el impacto máximo es 0).
+- **Recurrencia:** para cada iniciativa `i` (con `costo_i` e `impacto_i`) y cada presupuesto `w`:
+  - Si `costo_i > w` (no entra en el presupuesto): `dp[i][w] = dp[i - 1][w]`.
+  - Si `costo_i <= w` (puede financiarse o no):
+    `dp[i][w] = max(dp[i - 1][w], dp[i - 1][w - costo_i] + impacto_i)`.
+- **Reconstrucción de la solución:** una vez completada la tabla, el impacto óptimo está en `dp[n][P]`. Para saber **cuáles** iniciativas fueron elegidas, se recorre la tabla hacia atrás desde `i = n` hasta `1` comenzando en `w = P`: si `dp[i][w] != dp[i - 1][w]`, significa que la iniciativa `i` aportó a la mejora de esa celda, por lo que se marca como seleccionada y se descuenta su costo (`w -= costo_i`).
+
+### 5.3 Justificación de la estrategia
+
+El problema cumple las dos propiedades que justifican el uso de **Programación Dinámica**:
+
+1. **Subestructura óptima:** la mejor selección entre las primeras `i` iniciativas con presupuesto `w` se construye a partir de la mejor selección entre las primeras `i - 1` iniciativas (ya sea con presupuesto `w` si no se elige la `i`, o con presupuesto `w - costo_i` si se elige).
+2. **Subproblemas superpuestos:** distintas combinaciones de decisiones consultan reiteradamente el mismo subproblema `(i - 1, w')`. Tabular cada celda una sola vez evita recalcular subproblemas de forma exponencial.
+
+**Por qué NO sirve Greedy.** Una heurística voraz como ordenar por mayor razón `impacto / costo` falla porque las iniciativas no se pueden fraccionar y el presupuesto sobrante puede quedar desaprovechado. Contraejemplo con `P = 50` y tres iniciativas `(costo, impacto)`:
+- `#1 = (10, 60)` (razón 6), `#2 = (20, 100)` (razón 5), `#3 = (30, 120)` (razón 4).
+- Greedy elige `#1` y `#2` (costo 30, impacto **160**) y ya no puede agregar `#3` porque costaría 60.
+- El óptimo real es elegir `#2` y `#3` (costo 50, impacto **220**), que es el que encuentra la tabla de programación dinámica.
+
+**Alternativas descartadas.**
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Greedy (por mayor impacto, menor costo o mejor razón `impacto/costo`) | No garantiza el óptimo en la mochila 0/1 al no poder fraccionar iniciativas. |
+| Fuerza bruta / Backtracking sin memorización | Explora los `2^n` subconjuntos posibles: costo exponencial **O(2^n)**, que recalcula los mismos estados `(i, w)` una y otra vez. |
+
+### 5.4 Dónde se ve en el código
+
+Clases `redsocial.modelo.Iniciativa` y `redsocial.financiamiento.SeleccionIniciativas`:
+
+| Fase de la estrategia | Dónde está en el código |
+|---|---|
+| Validaciones y cota de memoria | `construirTabla`: rechaza nulos, presupuestos negativos y tablas que superen `MAXIMO_CELDAS`. |
+| `// CASO BASE` | `construirTabla`: `int[][] dp = new int[n + 1][presupuesto + 1]` deja la fila `0` inicializada en `0`. |
+| `// RECURRENCIA` | `construirTabla`: doble ciclo `for (i = 1..n)` y `for (w = 0..presupuesto)` que asigna `dp[i][w] = dp[i - 1][w]` y, si `costo <= w`, `Math.max(dp[i - 1][w], dp[i - 1][w - costo] + impacto)`. |
+| `// RECONSTRUCCIÓN` | `seleccionar`: recorre `i` desde `n` hasta `1` preguntando `if (dp[i][w] != dp[i - 1][w])`, marca `elegida[i] = true` y actualiza `w -= iniciativa.costo()`. |
+| Resultado inmutable | `Resultado(List<Iniciativa> seleccionadas, int costoTotal, int impactoTotal, int presupuestoRestante)` preserva el orden original de las iniciativas. |
+
+### 5.5 Casos de prueba
+
+`SeleccionIniciativasTest` verifica tanto el valor óptimo como la reconstrucción y las validaciones:
+
+| Caso de prueba | Entrada | Resultado esperado | Qué verifica |
+|---|---|---|---|
+| `ejemploClasicoDondeGreedyFalla` | `[(1,10,60), (2,20,100), (3,30,120)]`, `P = 50` | Seleccionadas `[2, 3]`, costo 50, impacto 220, restante 0 | Supera el resultado subóptimo de Greedy (160). |
+| `presupuestoCeroYSinIniciativas` | `P = 0` con 2 iniciativas; y lista vacía con `P = 100` | Selección vacía, costo 0, impacto 0 | Casos borde de fila 0 y columna 0 de la tabla. |
+| `ningunaEntraEnElPresupuesto` | `[(1,50,200)]`, `P = 49` | Selección vacía, costo 0, impacto 0, restante 49 | Iniciativas más caras que el presupuesto se descartan. |
+| `iniciativaConImpactoCero` | `[(1,5,0), (2,5,7)]`, `P = 5` | Seleccionada `[2]`, costo 5, impacto 7 | Iniciativas con impacto 0 no alteran el óptimo. |
+| `validaciones` | `costo <= 0`, `impacto < 0`, `P < 0`, lista `null` | `IllegalArgumentException` | Cumplimiento de precondiciones del dominio. |
+| `coincideConFuerzaBrutaEn300CasosAlAzar` | 300 casos aleatorios (`Random(42)`, `n` entre 1 y 10, `P` entre 0 y 59) | Mismo impacto que `fuerzaBruta` (`2^n`), suma de costos e impactos consistente | Exactitud del óptimo y de la reconstrucción en escenarios variados. |
+
+### 5.6 Complejidad temporal
+
+Sea **n** la cantidad de iniciativas y **P** el presupuesto disponible:
+
+- Crear y llenar la tabla `dp` de `(n + 1) x (P + 1)` celdas, donde cada celda se calcula en **O(1)** (una comparación y una suma): **O(n · P)**.
+- Reconstruir las iniciativas seleccionadas recorriendo desde `i = n` hasta `1`: **O(n)**.
+
+**Total: tiempo O(n · P) y espacio O(n · P).** Se trata de una complejidad **pseudopolinomial**, porque depende de la magnitud numérica del presupuesto `P` y no únicamente de la cantidad de elementos `n`.
+
+### 5.7 Ejemplo de ejecución
+
+Salida real de `java -jar target/red-social-universitaria-1.0.0.jar --demo` (opción 3, con presupuesto por defecto `50`):
+
+```
+=== 3. Selección de iniciativas (Programación Dinámica: mochila 0/1) ===
+Iniciativas disponibles:
+  #1 (costo: 10, impacto: 60)
+  #2 (costo: 15, impacto: 80)
+  #3 (costo: 30, impacto: 120)
+  #4 (costo: 20, impacto: 90)
+  #5 (costo: 25, impacto: 70)
+Presupuesto [50]: Iniciativas seleccionadas: #1, #2, #4
+Costo total: 45 | Impacto obtenido: 230 | Presupuesto restante: 5
+```
+
+Con presupuesto `50`, combinar `#1`, `#2` y `#4` suma un costo de `10 + 15 + 20 = 45` (sobran `5`) y logra un impacto total de `60 + 80 + 90 = 230`, superando cualquier combinación que incluya `#3` o `#5`.
 
 ## 6. A1 — Consultas de difusión entre todos los usuarios (Programación Dinámica)
 
