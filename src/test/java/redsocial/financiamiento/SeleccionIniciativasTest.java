@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import redsocial.financiamiento.SeleccionIniciativas.Resultado;
@@ -95,5 +96,55 @@ class SeleccionIniciativasTest {
                 () -> SeleccionIniciativas.seleccionar(List.of(new Iniciativa(1, 5, 10)), -1));
         assertThrows(IllegalArgumentException.class,
                 () -> SeleccionIniciativas.maximoImpacto(null, 10));
+    }
+
+    @Test
+    @DisplayName("Coincide con fuerza bruta en 300 casos al azar y la reconstrucción es coherente")
+    void coincideConFuerzaBrutaEn300CasosAlAzar() {
+        Random azar = new Random(42);
+        for (int caso = 0; caso < 300; caso++) {
+            int n = 1 + azar.nextInt(10);
+            int presupuesto = azar.nextInt(60);
+            List<Iniciativa> iniciativas = new ArrayList<>();
+            for (int id = 1; id <= n; id++) {
+                int costo = 1 + azar.nextInt(25);
+                int impacto = azar.nextInt(100);
+                iniciativas.add(new Iniciativa(id, costo, impacto));
+            }
+
+            int optimoFuerzaBruta = fuerzaBruta(iniciativas, 0, presupuesto);
+            Resultado resultado = SeleccionIniciativas.seleccionar(iniciativas, presupuesto);
+
+            assertEquals(optimoFuerzaBruta, resultado.impactoTotal());
+            assertEquals(optimoFuerzaBruta, SeleccionIniciativas.maximoImpacto(iniciativas, presupuesto));
+
+            int sumaCostos = 0;
+            int sumaImpactos = 0;
+            int idAnterior = 0;
+            for (Iniciativa elegida : resultado.seleccionadas()) {
+                assertTrue(elegida.id() > idAnterior, "las iniciativas deben conservar su orden y no repetirse");
+                idAnterior = elegida.id();
+                sumaCostos += elegida.costo();
+                sumaImpactos += elegida.impacto();
+            }
+            assertTrue(sumaCostos <= presupuesto);
+            assertEquals(sumaCostos, resultado.costoTotal());
+            assertEquals(sumaImpactos, resultado.impactoTotal());
+            assertEquals(presupuesto - sumaCostos, resultado.presupuestoRestante());
+        }
+    }
+
+    /** Explora los 2^n subconjuntos posibles para obtener el impacto óptimo real como referencia. */
+    private static int fuerzaBruta(List<Iniciativa> iniciativas, int indice, int presupuestoDisponible) {
+        if (indice == iniciativas.size()) {
+            return 0;
+        }
+        Iniciativa actual = iniciativas.get(indice);
+        int sinActual = fuerzaBruta(iniciativas, indice + 1, presupuestoDisponible);
+        if (actual.costo() > presupuestoDisponible) {
+            return sinActual;
+        }
+        int conActual = actual.impacto() + fuerzaBruta(iniciativas, indice + 1, presupuestoDisponible - actual.costo());
+        return Math.max(sinActual, conActual);
     }
 }
