@@ -31,7 +31,7 @@ public final class Main {
         OPCIONES[2] = new CadenaRapidaConsola();
 
         // 3 · Selección de iniciativas (Fadi)
-        // OPCIONES[3] = new IniciativasConsola();
+        OPCIONES[3] = new IniciativasConsola();
 
         // 4 · A1 Consultas entre todos los usuarios (Lucas)
         // OPCIONES[4] = new ConsultasConsola();
