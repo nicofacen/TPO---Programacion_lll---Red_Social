@@ -2,7 +2,7 @@
 
 **Materia:** Programación III (Diseño y Análisis de Algoritmos) — UADE
 **Propuesta elegida:** 1 — Red social universitaria para la colaboración
-**Integrantes:** Nicolas, Lucas y Fadi Abdala
+**Integrantes:** Nicolas Facendini, Lucas Felice y Fadi Abdala
 **Lenguaje:** Java 21 (Maven, JUnit 5)
 
 ---
