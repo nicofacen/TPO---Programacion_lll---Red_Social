@@ -1,7 +1,7 @@
 # Red Social Universitaria
 
 TP Obligatorio de **Programación III** (UADE) — Propuesta 1.
-Integrantes: **Nicolas**, **Lucas** y **Fadi**.
+Integrantes: **Nicolas Facendini**, **Lucas Felice** y **Fadi Abdala**.
 
 Aplicación de consola en Java que resuelve problemas de una red social universitaria aplicando distintas
 estrategias algorítmicas, cada una reconocible en el código.
