@@ -5,6 +5,7 @@ Integrantes: **Nicolas Facendini**, **Lucas Felice** y **Fadi Abdala**.
 
 Aplicación de consola en Java que resuelve problemas de una red social universitaria aplicando distintas
 estrategias algorítmicas, cada una reconocible en el código.
+El **informe** se encuentra en la carpeta docs
 
 ## Funcionalidades
 
