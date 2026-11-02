@@ -350,7 +350,117 @@ Con presupuesto `50`, combinar `#1`, `#2` y `#4` suma un costo de `10 + 15 + 20 
 
 ## 6. A1 — Consultas de difusión entre todos los usuarios (Programación Dinámica)
 
-_Pendiente — Entrega 2 — responsable: Lucas_
+### 6.1 Análisis del problema
+
+**Datos.** La red de difusión dirigida (`Grafo`): `V` usuarios y vínculos `u -> v` con un tiempo en minutos positivo. Después del
+procesamiento inicial llegan muchas consultas del tipo "¿cuánto tarda la mejor cadena de X a Y y cuál es?".
+
+**Restricciones.**
+
+- El procesamiento inicial se hace **una sola vez** y sus resultados se **conservan** para responder todas las consultas sin recalcular.
+- Hay pares **sin cadena** (por ejemplo, nadie le transmite a Hugo): hay que distinguirlos de "tiempo 0" (el caso `X -> X`).
+- Un usuario inexistente es un error de uso (`IllegalArgumentException`).
+- La instancia refleja la red tal como estaba al construirla.
+
+**Objetivo.** Responder rápido el tiempo mínimo, y la cadena que lo logra, entre **cualquier** par de usuarios.
+
+### 6.2 Estrategia elegida: Programación Dinámica (Floyd-Warshall)
+
+Se numeran los usuarios `0..V-1` y se arma una matriz `dist[V][V]`:
+
+- **Subproblema:** `dist[i][j]` = mejor tiempo de `i` a `j` usando **solo los usuarios `0..k` como intermediarios**.
+- **Caso base (sin intermediarios):** `dist[i][i] = 0`, `dist[u][v] = minutos` para cada vínculo directo e "infinito" en el resto.
+- **Recurrencia:** al habilitar al usuario `k`, la mejor cadena de `i` a `j` o no pasa por `k` (se conserva el valor) o pasa por `k`:
+  `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])`.
+- Se avanza `k = 0, 1, ..., V-1`; al terminar, todos los usuarios pudieron ser intermediarios y la matriz tiene el óptimo global.
+- **Reconstrucción:** una segunda matriz `siguiente[i][j]` guarda el primer usuario después de `i` en la mejor cadena hacia `j`. Cuando
+  pasar por `k` mejora, `siguiente[i][j] = siguiente[i][k]`. Para armar la cadena se parte del origen y se avanza con `siguiente` hasta el destino.
+
+**Cómo evoluciona una celda (Ana -> Gina en la red de ejemplo).** El orden de los usuarios es Ana, Bruno, Carla, Diego, Eva, Facu, Gina, Hugo.
+
+| Intermediarios habilitados | `dist[Ana][Gina]` | Qué pasó |
+|---|---|---|
+| ninguno | infinito | No hay vínculo directo Ana -> Gina |
+| hasta Bruno | infinito | Ana llega a Diego (17) y a Eva (35) pasando por Bruno, pero ninguno de los dos está habilitado todavía para seguir hacia Gina |
+| hasta Carla | infinito | Ana mejora a Bruno (10 -> 8), a Diego (17 -> 15) y a Eva (35 -> 25); todavía no hay camino a Gina |
+| hasta Diego | infinito | Ana llega a Eva en 19 y a Facu en 27, pero falta habilitar a Eva o a Facu como intermediarios |
+| hasta Eva | **28** | Aparece Ana-Carla-Bruno-Diego-Eva-Gina: `dist[Ana][Eva] + dist[Eva][Gina] = 19 + 9`; además `dist[Ana][Facu]` baja de 27 a 25 |
+| hasta Facu | **27** | `dist[Ana][Facu] + dist[Facu][Gina] = 25 + 2 = 27 < 28`: se cambia a la cadena que termina en Facu |
+| hasta Gina y Hugo | 27 | Sin cambios: ya es el mínimo |
+
+### 6.3 Justificación de la estrategia
+
+El problema tiene **subestructura óptima** (un tramo de una cadena óptima también es óptimo) y **subproblemas superpuestos** (el mismo
+`dist[i][k]` se reutiliza para muchos destinos `j`). La tabla guarda cada subproblema una sola vez. Además, la consigna pide
+**procesamiento inicial** y **muchas consultas**: encaja con pagar un costo único y responder después en `O(1)`.
+
+**Alternativas descartadas.**
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Repetir Dijkstra (funcionalidad 2) en cada consulta | Cada consulta cuesta `O((V + E) log V)`. Con pocas consultas es mejor que Floyd-Warshall, pero con muchas se repite trabajo que la matriz guarda de una vez. |
+| Dijkstra desde cada origen y guardar los resultados | Es válido y comparable en redes ralas, pero no aplica la programación dinámica que pide el enunciado para esta funcionalidad. |
+| Fuerza bruta (probar todas las cadenas posibles) | Cantidad exponencial de caminos. |
+
+**Cuándo conviene cada uno:** pocas consultas, o la red cambia seguido ⇒ Dijkstra; muchas consultas sobre una red estable ⇒ Floyd-Warshall.
+
+### 6.4 Dónde se ve en el código
+
+Clase `redsocial.difusion.ConsultasDifusion`:
+
+| Fase de la estrategia | Dónde está en el código |
+|---|---|
+| Procesamiento inicial | Constructor `ConsultasDifusion(Grafo)`: se hace una sola vez. |
+| Caso base | Constructor, comentario `// CASO BASE`: `dist[i][i] = 0`, vínculos directos e `INF = Integer.MAX_VALUE / 2` (para que sumar dos infinitos no desborde). |
+| Ampliación y `// RECURRENCIA` | Constructor, comentario `// AMPLIACIÓN`: triple bucle `k, i, j`; se saltean los casos con `dist[i][k]` o `dist[k][j]` en `INF`, y la línea comentada `// RECURRENCIA` actualiza `dist[i][j]` (y `siguiente[i][j]`). |
+| Consulta de tiempo | `tiempoMinimo(origen, destino)`: lectura de la matriz, `O(1)`; devuelve `OptionalInt.empty()` si es `INF`. |
+| Reconstrucción de la cadena | `consultar(origen, destino)`: avanza con `siguiente` desde el origen hasta el destino. |
+| Presentación | `matrizComoTexto()` y la consola `ConsultasConsola` (opción 4). |
+
+### 6.5 Casos de prueba
+
+`ConsultasDifusionTest` (4 pruebas). La red de prueba es `A->B 4`, `A->C 1`, `C->B 2`, `B->D 1` y un usuario `Aislado`:
+
+| Entrada | Resultado esperado |
+|---|---|
+| `consultar("A", "D")` | Cadena `[A, C, B, D]`, 4 minutos |
+| `consultar("D", "A")` y `consultar("A", "Aislado")` | No alcanzable |
+| `consultar("B", "B")` | Alcanzable, 0 minutos |
+| `tiempoMinimo("A", "D")` / `tiempoMinimo("D", "A")` | `OptionalInt.of(4)` / `OptionalInt.empty()` |
+| `A->B` con 9 y luego `A->B` con 3 | `tiempoMinimo("A", "B")` vale 3 |
+| Usuario inexistente | `IllegalArgumentException` |
+| 100 redes al azar (semilla 2026, 2 a 10 usuarios, hasta `3n` vínculos de 1 a 20 minutos), todos los pares (i, j) | Igual `alcanzable` y mismo `tiempoTotal` que `CadenaMasRapida.calcular` (Dijkstra); la cadena empieza en el origen y termina en el destino |
+
+### 6.6 Complejidad temporal
+
+- **Procesamiento inicial:** tres bucles anidados de `V` iteraciones con trabajo constante adentro: `V · V · V` ⇒ **O(V³)**. Inicializar
+  las matrices cuesta `O(V² + E)`, que queda absorbido.
+- **Espacio:** dos matrices de `V x V` ⇒ **O(V²)**.
+- **Consulta de tiempo:** una lectura de `dist` ⇒ **O(1)**.
+- **Consulta de cadena:** se avanza un usuario por paso hasta el destino ⇒ **O(L)**, con `L` la cantidad de usuarios de la cadena (`L <= V`).
+- Frente a repetir Dijkstra, `Q` consultas cuestan `O(V³ + Q)` contra `O(Q · (V + E) log V)`: Floyd-Warshall se amortiza cuando `Q` es grande.
+
+### 6.7 Ejemplo de ejecución
+
+Opción 4 del `--demo` (los valores por defecto `Ana -> Gina` y `Ana -> Hugo`):
+
+```
+Procesamiento inicial completo. Tiempos mínimos en minutos ('-' = sin cadena):
+       Ana    Bruno  Carla  Diego  Eva    Facu   Gina   Hugo   
+Ana    0      8      5      15     19     25     27     -      
+Bruno  -      0      27     7      11     17     19     -      
+Carla  -      3      0      10     14     20     22     -      
+Diego  -      23     20     0      4      10     12     -      
+Eva    -      19     16     26     0      6      8      -      
+Facu   -      13     10     20     24     0      2      -      
+Gina   -      11     8      18     22     28     0      -      
+Hugo   1      9      6      16     20     26     28     0      
+Origen [Ana]: Destino [Gina]: Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina | Tiempo total: 27 min
+Origen [Ana]: Destino [Hugo]: No existe cadena de difusión de Ana a Hugo
+```
+
+La columna de Hugo es `-` salvo su propia diagonal, porque nadie le transmite a él. La cadena Ana -> Gina de 27 minutos coincide con la que
+encuentra Dijkstra en la funcionalidad 2.
 
 ## 7. B1 — Formación de equipos con restricciones (Backtracking)
 
