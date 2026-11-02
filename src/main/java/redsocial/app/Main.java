@@ -34,7 +34,7 @@ public final class Main {
         OPCIONES[3] = new IniciativasConsola();
 
         // 4 · A1 Consultas entre todos los usuarios (Lucas)
-        // OPCIONES[4] = new ConsultasConsola();
+        OPCIONES[4] = new ConsultasConsola();
 
         // 5 · B1 Formación de equipos (Nicolas)
         // OPCIONES[5] = new EquiposConsola();
