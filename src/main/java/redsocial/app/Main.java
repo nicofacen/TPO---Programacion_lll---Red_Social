@@ -37,7 +37,7 @@ public final class Main {
         OPCIONES[4] = new ConsultasConsola();
 
         // 5 · B1 Formación de equipos (Nicolas)
-        // OPCIONES[5] = new EquiposConsola();
+        OPCIONES[5] = new EquiposConsola();
 
         // 6 · B3 Cadenas alternativas (Fadi)
         // OPCIONES[6] = new CadenasAlternativasConsola();
