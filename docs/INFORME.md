@@ -464,7 +464,157 @@ encuentra Dijkstra en la funcionalidad 2.
 
 ## 7. B1 — Formación de equipos con restricciones (Backtracking)
 
-_Pendiente — Entrega 2 — responsable: Nicolas_
+### 7.1 Análisis del problema
+
+**Datos.** Una lista de estudiantes, cada uno con un nombre y sus habilidades declaradas (`Estudiante`); el tamaño `k` de los equipos;
+el conjunto de habilidades requeridas; los integrantes obligatorios y los pares de estudiantes incompatibles.
+
+**Restricciones.**
+
+- Cada equipo tiene exactamente `k` integrantes y, **entre todos**, cubren todas las habilidades requeridas.
+- Los obligatorios están en todos los equipos.
+- Dos estudiantes incompatibles no pueden estar en el mismo equipo (la incompatibilidad es simétrica: Ana con Beto equivale a Beto con Ana).
+- El mismo equipo no puede aparecer dos veces con sus integrantes en otro orden: `[Ana, Beto]` y `[Beto, Ana]` son el mismo.
+- Errores de uso (tamaño `<= 0`, nombres repetidos, un obligatorio o un incompatible que no existe) ⇒ `IllegalArgumentException`.
+  Si no hay ningún equipo posible (más obligatorios que `k`, obligatorios incompatibles entre sí, una habilidad que nadie tiene) se
+  devuelve una lista vacía.
+
+**Objetivo.** Encontrar y mostrar **todos** los equipos válidos, no uno solo.
+
+### 7.2 Estrategia elegida: Backtracking (incluir / excluir)
+
+Se arma el equipo de a un estudiante, decidiendo en orden de posición si cada candidato **se incluye o se excluye**:
+
+- **Elegir:** se incluye al candidato (se suma al equipo y se actualiza qué habilidades quedan cubiertas).
+- **Explorar:** se sigue decidiendo con el próximo candidato.
+- **Deshacer:** al volver de la recursión se lo quita del equipo, y se prueba la otra rama: excluirlo.
+- Cuando el equipo llega a `k` integrantes se verifica que cubra todas las habilidades requeridas; si las cubre, se guarda.
+- Los obligatorios se incluyen al principio y no participan de la búsqueda.
+
+**Árbol de decisiones de un caso chico.** Estudiantes `Ana{Java,SQL}`, `Beto{Java,UI}`, `Cami{SQL}`, `Dani{UI}`; tamaño 2; requeridas
+Java, SQL y UI. Es el recorrido real del algoritmo (primero la rama "incluir"):
+
+```
+(vacío)
+├── +Ana                      cubre Java, SQL
+│   ├── +Beto                 [Ana, Beto]  cubre todo          -> VÁLIDO
+│   └── -Beto
+│       ├── +Cami             [Ana, Cami]  falta UI            -> descartado
+│       └── -Cami
+│           ├── +Dani         [Ana, Dani]  cubre todo          -> VÁLIDO
+│           └── -Dani         PODA: cantidad (falta 1 y no quedan candidatos)
+└── -Ana
+    ├── +Beto                 cubre Java, UI
+    │   ├── +Cami             [Beto, Cami] cubre todo          -> VÁLIDO
+    │   └── -Cami             PODA: habilidades (falta SQL y Dani no la tiene)
+    └── -Beto                 PODA: habilidades (falta Java y ni Cami ni Dani la tienen)
+```
+
+Resultado: `[Ana, Beto]`, `[Ana, Dani]`, `[Beto, Cami]`. Si además Ana y Beto fueran incompatibles, la rama `+Ana -> +Beto` ni se
+abriría (poda por incompatibilidad) y quedarían `[Ana, Dani]` y `[Beto, Cami]`.
+
+**Cómo se evitan los repetidos.** Las decisiones se toman siempre hacia posiciones mayores: después de decidir sobre Ana solo se decide
+sobre Beto, Cami y Dani, nunca se vuelve hacia atrás. Así cada subconjunto de estudiantes corresponde a un único camino del árbol y cada
+equipo se genera una sola vez, con sus integrantes en el orden de la lista original.
+
+### 7.3 Justificación de la estrategia
+
+La consigna pide **todas** las soluciones, y las restricciones (incompatibles, obligatorios, habilidades) se pueden ir verificando a
+medida que se arma el equipo. Backtracking recorre de forma sistemática el espacio de combinaciones y permite abandonar temprano las
+ramas que ya no pueden terminar bien.
+
+**Alternativas descartadas.**
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Greedy (elegir en cada paso al que más habilidades aporta) | Construye **un** equipo y ni siquiera garantiza encontrarlo: una elección local puede dejar sin salida al resto. No enumera todas las soluciones. |
+| Programación Dinámica | Sirve para optimizar un valor (el mejor equipo, la cantidad de equipos), no para listar cada equipo distinto; además las incompatibilidades entre pares rompen la independencia de los subproblemas. |
+| Fuerza bruta (las `2^n` combinaciones, filtrando al final) | Correcta pero recorre todo sin descartar nada. Se usa en los tests como referencia para comprobar el backtracking. |
+
+**Podas** (en el método `buscar`). Ninguna descarta un equipo válido, porque cada una corta solo ramas en las que es imposible completarlo:
+
+| Poda | Cuándo corta | Por qué no pierde soluciones |
+|---|---|---|
+| `// PODA: incompatibilidad` | El candidato es incompatible con alguien ya elegido (obligatorios incluidos) | Todo equipo de esa rama tendría a los dos juntos: ninguno es válido. Solo se corta la rama "incluir"; la rama "excluir" se sigue explorando. |
+| `// PODA: cantidad` | Los candidatos que quedan por decidir son menos que los integrantes que faltan | Aunque se incluyan todos, el equipo nunca llega a `k`. |
+| `// PODA: habilidades` | Una habilidad requerida que todavía no cubre nadie del equipo no la tiene ningún candidato restante | Ningún equipo de esa rama podrá cubrirla. |
+
+Para que la poda por habilidades sea barata, se precalcula de atrás hacia adelante `sufijo[p]` (las habilidades requeridas que aportan
+los candidatos desde la posición `p` hasta el final, con `BitSet`) y la cobertura del equipo se mantiene con contadores por habilidad que
+se suben al elegir y se bajan al deshacer, sin recalcular desde cero.
+
+### 7.4 Dónde se ve en el código
+
+Clase `redsocial.equipos.FormacionEquipos`, método público `encontrarEquipos` y clase interna `Busqueda`:
+
+| Fase de la estrategia | Dónde está en el código |
+|---|---|
+| Validaciones y preparación | `encontrarEquipos`: nombres repetidos o desconocidos, matriz simétrica de incompatibles, casos sin solución (`k > n`, más obligatorios que `k`). |
+| Obligatorios fijos | `Busqueda.incluirObligatorios()`: los agrega al inicio; si dos son incompatibles devuelve `false` y no hay equipos. |
+| Precálculo para la poda | Constructor de `Busqueda`: `aporta[i]` (habilidades requeridas de cada estudiante) y `sufijo[p]`. |
+| Caso base (equipo completo) | `buscar`: si `faltan == 0`, se guarda solo si `sinCubrir == 0`. |
+| Podas | `buscar`: comentarios `// PODA: cantidad`, `// PODA: habilidades` y `// PODA: incompatibilidad`. |
+| `// ELEGIR`, `// EXPLORAR`, `// DESHACER (backtrack)` | `buscar`: `agregar(candidato)`, llamada `buscar(p + 1)` y `quitarUltimo()`; después, la rama "excluir". |
+| Armado del resultado | `registrarEquipo()`: intercala obligatorios y elegidos para dejar los nombres en el orden de la lista original. |
+| Presentación | Consola `EquiposConsola` (opción 5). |
+
+### 7.5 Casos de prueba
+
+`FormacionEquiposTest` (7 pruebas). Grupo base: `Ana{Java,SQL}`, `Beto{Java,UI}`, `Cami{SQL}`, `Dani{UI}`; los equipos se comparan como conjunto.
+
+| Entrada | Resultado esperado |
+|---|---|
+| Tamaño 2, requeridas `{Java, SQL, UI}` | `[Ana, Beto]`, `[Ana, Dani]`, `[Beto, Cami]` |
+| Lo mismo con `Cami` obligatoria | Solo `[Beto, Cami]` |
+| Lo mismo con `Ana` y `Beto` incompatibles | `[Ana, Dani]`, `[Beto, Cami]` |
+| Tamaño 1 pidiendo `{Java, SQL, UI}` | Lista vacía (nadie tiene las tres) |
+| Obligatorios `Ana` y `Beto`, incompatibles entre sí, tamaño 3 | Lista vacía |
+| Más obligatorios (`Ana`, `Beto`) que el tamaño (1) | Lista vacía |
+| Requerida `Python`, que nadie tiene | Lista vacía |
+| Sin habilidades requeridas, tamaño 2 | Las 6 combinaciones de C(4, 2), sin repetir |
+| Tamaño 0, obligatorio inexistente, incompatibilidad con un nombre inexistente | `IllegalArgumentException` |
+| 300 casos al azar (semilla 11): de 1 a 8 estudiantes con habilidades de `{Java, SQL, UI, Testing, Redes}`, tamaño de 1 a `n`, requeridas, un obligatorio y de 0 a 3 incompatibilidades al azar | El conjunto de equipos coincide con el de una **fuerza bruta** que recorre las `2^n` máscaras con `k` bits, y no hay equipos repetidos |
+
+La comparación contra fuerza bruta es la que garantiza que las podas no pierden soluciones ni generan duplicados.
+
+### 7.6 Complejidad temporal
+
+- **Sin podas**, el árbol incluir/excluir tiene un nivel por candidato y dos ramas por nivel: **O(2^n)** nodos.
+- **Con la poda por cantidad**, solo se recorren ramas que todavía pueden llegar a `k` integrantes. En el peor caso (sin
+  incompatibilidades ni habilidades que poden) se generan todas las combinaciones de `k` entre `n`, y verificar y copiar cada equipo
+  cuesta `O(k)` gracias a los contadores de cobertura: **O(C(n, k) · k)**.
+- **Las podas por incompatibilidad y por habilidades** no cambian el peor caso, pero en la práctica eliminan subárboles enteros: en el
+  ejemplo de 7.2 se cortan tres ramas antes de llegar a un equipo completo.
+- **Costo por nodo:** la poda por habilidades revisa `h` habilidades requeridas (`O(h)`) y la de incompatibilidad revisa los elegidos
+  (`O(k)`).
+- **Precálculo:** `O(n · h)` para `aporta` y `sufijo`; **espacio** `O(n · h + n²)` (incluida la matriz de incompatibles) más `O(n)` de pila.
+
+### 7.7 Ejemplo de ejecución
+
+Opción 5 del `--demo` (datos fijos de la consola):
+
+```
+Estudiantes:
+  Lucia: [Java, SQL]
+  Mateo: [Java, UI]
+  Sofia: [SQL, Testing]
+  Tomas: [UI, Testing]
+  Valen: [Java, Testing]
+  Zoe: [SQL, UI]
+Tamaño del equipo: 3 | Habilidades requeridas: [Java, SQL, UI, Testing] | Obligatorios: [Lucia] | No pueden coincidir: Mateo y Sofia
+
+Equipos válidos: 7
+  [Lucia, Mateo, Tomas]
+  [Lucia, Mateo, Valen]
+  [Lucia, Sofia, Tomas]
+  [Lucia, Sofia, Zoe]
+  [Lucia, Tomas, Valen]
+  [Lucia, Tomas, Zoe]
+  [Lucia, Valen, Zoe]
+```
+
+Todos incluyen a Lucia (obligatoria) y ninguno junta a Mateo con Sofia. `[Lucia, Mateo, Zoe]` no aparece porque no cubre Testing, y
+`[Lucia, Sofia, Valen]` no aparece porque no cubre UI.
 
 ## 8. B3 — Cadenas alternativas de difusión (Backtracking)
 
