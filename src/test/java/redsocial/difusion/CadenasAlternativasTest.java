@@ -1,21 +1,25 @@
 package redsocial.difusion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import redsocial.difusion.CadenasAlternativas.CadenaAlternativa;
 import redsocial.difusion.CadenasAlternativas.Resultado;
 import redsocial.grafo.Grafo;
+import redsocial.grafo.Grafo.Arista;
 
 /** Pruebas de la búsqueda de cadenas alternativas con restricciones (B3: Backtracking). */
 @DisplayName("CadenasAlternativas: cadenas simples de difusión con Backtracking")
@@ -148,5 +152,112 @@ class CadenasAlternativasTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> CadenasAlternativas.buscar(g, "Inexistente", "D", 100, 10, Set.of()));
+    }
+
+    @Test
+    @DisplayName("Coincide con una enumeración exhaustiva sin podas en 100 redes al azar")
+    void coincideConEnumeracionExhaustivaEn100RedesAlAzar() {
+        Random azar = new Random(99);
+
+        for (int caso = 0; caso < 100; caso++) {
+            int n = 3 + azar.nextInt(5); // 3 a 7 usuarios
+            Grafo g = new Grafo();
+            for (int i = 0; i < n; i++) {
+                g.agregarUsuario("U" + i);
+            }
+            for (int e = 0; e < 2 * n; e++) {
+                int u = azar.nextInt(n);
+                int v = azar.nextInt(n - 1);
+                if (v >= u) {
+                    v++;
+                }
+                int minutos = 1 + azar.nextInt(9); // 1 a 9
+                g.agregarVinculo("U" + u, "U" + v, minutos);
+            }
+
+            String origen = "U0";
+            String destino = "U" + (n - 1);
+            int tiempoMaximo = 5 + azar.nextInt(25); // 5 a 29
+            int maxIntermediarios = azar.nextInt(n); // 0 a n-1
+            Set<String> excluidos =
+                    azar.nextBoolean() ? Set.of("U" + (1 + azar.nextInt(n - 1))) : Set.of();
+
+            int esperadas = contarExhaustivoSinPoda(
+                    g, origen, destino, tiempoMaximo, maxIntermediarios, excluidos);
+            Resultado r = CadenasAlternativas.buscar(
+                    g, origen, destino, tiempoMaximo, maxIntermediarios, excluidos);
+
+            assertEquals(esperadas, r.cadenas().size(), "Cantidad de cadenas en el caso " + caso);
+
+            Set<List<String>> vistas = new HashSet<>();
+            for (CadenaAlternativa c : r.cadenas()) {
+                List<String> usuarios = c.usuarios();
+                assertEquals(origen, usuarios.getFirst());
+                assertEquals(destino, usuarios.getLast());
+                assertEquals(
+                        usuarios.size(),
+                        new HashSet<>(usuarios).size(),
+                        "No puede repetir usuarios");
+                assertTrue(c.minutos() <= tiempoMaximo, "No puede superar el tiempo máximo");
+                assertTrue(
+                        usuarios.size() - 2 <= maxIntermediarios,
+                        "No puede superar el máximo de intermediarios");
+                for (String ex : excluidos) {
+                    assertFalse(usuarios.contains(ex), "No puede pasar por un usuario excluido");
+                }
+                assertTrue(vistas.add(usuarios), "No puede haber cadenas duplicadas");
+            }
+        }
+    }
+
+    /**
+     * Recorre todos los caminos simples de {@code origen} a {@code destino} sin ninguna poda
+     * y aplica todas las restricciones únicamente al llegar al destino.
+     */
+    private static int contarExhaustivoSinPoda(Grafo g, String origen, String destino,
+            int tiempoMaximo, int maxIntermediarios, Set<String> excluidos) {
+        boolean[] enCamino = new boolean[g.cantidadUsuarios()];
+        List<String> camino = new ArrayList<>();
+        int indiceOrigen = g.indiceDe(origen);
+        int indiceDestino = g.indiceDe(destino);
+
+        enCamino[indiceOrigen] = true;
+        camino.add(origen);
+
+        return dfsExhaustivo(
+                g, indiceOrigen, indiceDestino, 0, tiempoMaximo, maxIntermediarios,
+                excluidos, enCamino, camino);
+    }
+
+    private static int dfsExhaustivo(Grafo g, int actual, int destino, int tiempo,
+            int tiempoMaximo, int maxIntermediarios, Set<String> excluidos,
+            boolean[] enCamino, List<String> camino) {
+        if (actual == destino) {
+            if (tiempo > tiempoMaximo || camino.size() - 2 > maxIntermediarios) {
+                return 0;
+            }
+            for (String u : camino) {
+                if (excluidos.contains(u)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+
+        int total = 0;
+        for (Arista arista : g.vecinos(actual)) {
+            int vecino = arista.destino();
+            if (enCamino[vecino]) {
+                continue;
+            }
+            enCamino[vecino] = true;
+            camino.add(g.nombreDe(vecino));
+            total += dfsExhaustivo(
+                    g, vecino, destino, tiempo + arista.minutos(), tiempoMaximo,
+                    maxIntermediarios, excluidos, enCamino, camino);
+            camino.removeLast();
+            enCamino[vecino] = false;
+        }
+        return total;
     }
 }
