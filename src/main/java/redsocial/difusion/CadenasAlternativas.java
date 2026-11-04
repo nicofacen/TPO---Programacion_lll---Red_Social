@@ -17,6 +17,11 @@ import redsocial.grafo.Grafo.Arista;
  * volver, restaurar el estado quitando al vecino del camino y desmarcándolo (DESHACER / backtrack)
  * para probar el siguiente vínculo.</p>
  *
+ * <p><b>Restricciones.</b> Ninguna cadena repite usuarios ni pasa por un usuario excluido. Además,
+ * una cadena solo es válida si su tiempo total no supera {@code tiempoMaximo} y si no tiene más de
+ * {@code maxIntermediarios} intermediarios (usuarios de la cadena sin contar origen ni destino).
+ * Estos dos límites se verifican al registrar cada cadena que llega al destino.</p>
+ *
  * <p><b>Justificación (por qué Backtracking y no Dijkstra).</b> El algoritmo de Dijkstra (Greedy)
  * encuentra únicamente <i>una</i> cadena óptima (la de menor tiempo total) y descarta el resto de
  * los caminos. En cambio, esta funcionalidad requiere <i>enumerar todas las cadenas simples</i> que
@@ -102,16 +107,17 @@ public final class CadenasAlternativas {
         visitado[indiceOrigen] = true;
         camino.add(indiceOrigen);
 
-        explorar(grafo, indiceOrigen, indiceDestino, 0, visitado, camino, cadenas, mejor);
+        explorar(grafo, indiceOrigen, indiceDestino, 0, tiempoMaximo, maxIntermediarios,
+                visitado, camino, cadenas, mejor);
 
         return new Resultado(Collections.unmodifiableList(cadenas), mejor[0]);
     }
 
     private static void explorar(Grafo grafo, int actual, int destino, int tiempoAcumulado,
-            boolean[] visitado, List<Integer> camino, List<CadenaAlternativa> cadenas,
-            CadenaAlternativa[] mejor) {
+            int tiempoMaximo, int maxIntermediarios, boolean[] visitado, List<Integer> camino,
+            List<CadenaAlternativa> cadenas, CadenaAlternativa[] mejor) {
         if (actual == destino) {
-            registrar(grafo, camino, tiempoAcumulado, cadenas, mejor);
+            registrar(grafo, camino, tiempoAcumulado, tiempoMaximo, maxIntermediarios, cadenas, mejor);
             return;
         }
 
@@ -126,8 +132,8 @@ public final class CadenasAlternativas {
             camino.add(vecino);
 
             // EXPLORAR
-            explorar(grafo, vecino, destino, tiempoAcumulado + arista.minutos(),
-                    visitado, camino, cadenas, mejor);
+            explorar(grafo, vecino, destino, tiempoAcumulado + arista.minutos(), tiempoMaximo,
+                    maxIntermediarios, visitado, camino, cadenas, mejor);
 
             // DESHACER (backtrack)
             camino.remove(camino.size() - 1);
@@ -135,8 +141,17 @@ public final class CadenasAlternativas {
         }
     }
 
-    private static void registrar(Grafo grafo, List<Integer> camino, int minutos,
-            List<CadenaAlternativa> cadenas, CadenaAlternativa[] mejor) {
+    /**
+     * Registra la cadena actual si cumple los límites de tiempo e intermediarios.
+     * Intermediarios = usuarios de la cadena sin contar el origen ni el destino.
+     */
+    private static void registrar(Grafo grafo, List<Integer> camino, int minutos, int tiempoMaximo,
+            int maxIntermediarios, List<CadenaAlternativa> cadenas, CadenaAlternativa[] mejor) {
+        int intermediarios = camino.size() - 2;
+        if (minutos > tiempoMaximo || intermediarios > maxIntermediarios) {
+            return; // la cadena llega al destino pero no cumple los límites: se descarta
+        }
+
         List<String> nombres = new ArrayList<>(camino.size());
         for (int indice : camino) {
             nombres.add(grafo.nombreDe(indice));
