@@ -24,7 +24,7 @@ import redsocial.grafo.Grafo.Arista;
  * la más rápida. Backtracking permite recorrer sistemáticamente todas las trayectorias posibles.</p>
  *
  * <p><b>Complejidad temporal.</b> En el peor caso (un grafo denso donde casi todos los usuarios se
- * conectan entre sí), la cantidad de caminos simples entre dos vértices es del orden de (V - 2),
+ * conectan entre sí), la cantidad de caminos simples entre dos vértices es del orden de (V - 2)!,
  * por lo que la complejidad en el peor caso es <b>O(V!)</b>. Espacio auxiliar: O(V) para la pila de
  * recursión, el camino actual y el arreglo de visitados (sin contar la memoria de las cadenas
  * encontradas).</p>
@@ -56,20 +56,45 @@ public final class CadenasAlternativas {
      * @param grafo             red de difusión dirigida y ponderada
      * @param origen            nombre del usuario que inicia la difusión
      * @param destino           nombre del usuario que debe recibir el mensaje
-     * @param tiempoMaximo      tiempo máximo permitido en minutos para toda la cadena
-     * @param maxIntermediarios cantidad máxima de usuarios intermedios (sin contar origen ni destino)
+     * @param tiempoMaximo      tiempo máximo permitido en minutos para toda la cadena (mayor o igual a 0)
+     * @param maxIntermediarios cantidad máxima de usuarios intermedios, sin contar origen ni destino (mayor o igual a 0)
      * @param excluidos         conjunto de nombres de usuarios por los que no puede pasar la cadena
      * @return {@link Resultado} con la lista de cadenas encontradas y la más rápida de ellas
+     * @throws IllegalArgumentException si {@code grafo} o {@code excluidos} es nulo, si {@code origen}
+     *                                  o {@code destino} no existen en la red, si {@code origen} es igual
+     *                                  a {@code destino}, o si {@code tiempoMaximo < 0} o {@code maxIntermediarios < 0}
      */
     public static Resultado buscar(Grafo grafo, String origen, String destino, int tiempoMaximo,
             int maxIntermediarios, Set<String> excluidos) {
-        if (grafo == null) {
-            throw new IllegalArgumentException("El grafo no puede ser nulo");
+        if (grafo == null || excluidos == null) {
+            throw new IllegalArgumentException("El grafo y el conjunto de excluidos no pueden ser nulos");
         }
+        if (tiempoMaximo < 0) {
+            throw new IllegalArgumentException("El tiempo máximo no puede ser negativo: " + tiempoMaximo);
+        }
+        if (maxIntermediarios < 0) {
+            throw new IllegalArgumentException(
+                    "El máximo de intermediarios no puede ser negativo: " + maxIntermediarios);
+        }
+
         int indiceOrigen = grafo.indiceDe(origen);
         int indiceDestino = grafo.indiceDe(destino);
+        if (indiceOrigen == indiceDestino) {
+            throw new IllegalArgumentException(
+                    "El usuario de origen y el de destino deben ser distintos: " + origen);
+        }
 
         boolean[] visitado = new boolean[grafo.cantidadUsuarios()];
+        for (String excluido : excluidos) {
+            if (grafo.contiene(excluido)) {
+                visitado[grafo.indiceDe(excluido)] = true;
+            }
+        }
+
+        if (visitado[indiceOrigen] || visitado[indiceDestino]) {
+            return new Resultado(List.of(), null);
+        }
+
         List<Integer> camino = new ArrayList<>();
         List<CadenaAlternativa> cadenas = new ArrayList<>();
         CadenaAlternativa[] mejor = new CadenaAlternativa[1];
