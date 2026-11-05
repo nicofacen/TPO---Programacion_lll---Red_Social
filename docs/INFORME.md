@@ -18,18 +18,21 @@
 | 2 – B1 | Formación de equipos con restricciones | Backtracking | Incluir/excluir con podas | `equipos/FormacionEquipos` | O(C(n+1,k)·(h+k)) peor caso | 2 |
 | 2 – B3 | Cadenas alternativas de difusión | Backtracking | DFS de caminos simples con podas | `difusion/CadenasAlternativas` | O(V!) peor caso | 2 |
 
-Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase.
+Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase. De la segunda etapa se eligieron A1 (bloque A) y B1 y B3 (bloque B), como pide la consigna. Notación de la tabla: `n` elementos (publicaciones, iniciativas o estudiantes), `P` presupuesto, `V` usuarios, `E` vínculos, `k` tamaño del equipo y `h` habilidades requeridas.
 
 ## 2. Decisiones y supuestos del equipo
 
 1. **Relevancia de una publicación.** La consigna no la define. Se adopta `relevancia = reacciones + 2 × comentarios`, porque un comentario implica más esfuerzo que una reacción. El peso es la constante `Publicacion.PESO_COMENTARIO`.
 2. **Un vínculo por par ordenado de usuarios.** Si se carga más de uno, `Grafo` conserva el de menor tiempo: uno más lento nunca mejora una cadena.
 3. **Usuarios identificados por nombre**, mapeados internamente a índices enteros para trabajar con arreglos.
-4. **Origen igual a destino.** En la cadena más rápida devuelve la cadena de un solo usuario con 0 minutos; en B3 se rechaza.
+4. **Origen igual a destino.** En la cadena más rápida y en A1 devuelve la cadena de un solo usuario con 0 minutos; en B3 se rechaza.
 5. **Intermediarios (B3):** los usuarios de la cadena sin contar origen ni destino.
 6. **Datos de ejemplo fijos** dentro de cada consola; el menú pide solo parámetros simples, siempre con valor por defecto.
 7. **Salida de consola** con caracteres ASCII para símbolos (`->`, `>=`, `infinito`).
-8. **Sin ordenamientos del JDK** en todo el código fuente.
+8. **Sin ordenamientos del JDK** en todo el código fuente. La `PriorityQueue` de Dijkstra usa un `Comparator` solo para extraer el candidato de menor tiempo: no ordena ninguna colección (ver sección 9.3).
+9. **Usuarios excluidos (B3).** Si el origen o el destino están excluidos no hay cadenas; un nombre excluido que no existe en la red se ignora.
+10. **No tener solución no es un error.** B1 y B3 devuelven una lista vacía cuando ninguna alternativa cumple las restricciones. Los errores de uso (usuario inexistente, parámetros inválidos) lanzan `IllegalArgumentException`, y las consolas que piden datos los muestran como `Error: …` sin cerrar el programa.
+11. **Tope de memoria en la mochila.** `SeleccionIniciativas` rechaza tablas de más de `100_000_000` celdas.
 
 ## 3. Funcionalidad 1 — Organización del muro de publicaciones (Divide y Conquista)
 
