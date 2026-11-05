@@ -399,7 +399,7 @@ El problema tiene **subestructura óptima** (un tramo de una cadena óptima tamb
 | Alternativa | Por qué se descartó |
 |---|---|
 | Repetir Dijkstra (funcionalidad 2) en cada consulta | Cada consulta cuesta `O((V + E) log V)`. Con pocas consultas es mejor que Floyd-Warshall, pero con muchas se repite trabajo que la matriz guarda de una vez. |
-| Dijkstra desde cada origen y guardar los resultados | Es válido y comparable en redes ralas, pero no aplica la programación dinámica que pide el enunciado para esta funcionalidad. |
+| Dijkstra desde cada origen y guardar los resultados | Cuesta `O(V · (V + E) log V)`: en redes densas (`E ≈ V²`) empeora a `O(V³ log V)` y exige mantener `V` colas de prioridad, mientras que Floyd-Warshall opera directo sobre las matrices `dist` y `siguiente` en `O(V³)` sin estructuras auxiliares y sin repetir la estrategia Greedy de la funcionalidad 2. |
 | Fuerza bruta (probar todas las cadenas posibles) | Cantidad exponencial de caminos. |
 
 **Cuándo conviene cada uno:** pocas consultas, o la red cambia seguido ⇒ Dijkstra; muchas consultas sobre una red estable ⇒ Floyd-Warshall.
