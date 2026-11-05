@@ -12,9 +12,9 @@ public final class Entrada {
 
     private Entrada() { }
 
-    /** Muestra "mensaje [defecto]: " y devuelve la línea leída (sin espacios extremos) o el valor por defecto. */
+    /** Muestra "mensaje [Por defecto: defecto]: " y devuelve la línea leída (sin espacios extremos) o el valor por defecto. */
     public static String leer(Scanner in, String mensaje, String defecto) {
-        System.out.print(mensaje + (defecto.isEmpty() ? "" : " [" + defecto + "]") + ": ");
+        System.out.print(mensaje + (defecto.isEmpty() ? "" : " [Por defecto: " + defecto + "]") + ": ");
         String linea = in.nextLine();
         return linea.isBlank() ? defecto : linea.trim();
     }

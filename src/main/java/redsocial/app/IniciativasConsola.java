@@ -28,7 +28,7 @@ public final class IniciativasConsola implements Opcion {
         }
 
         try {
-            int presupuesto = Entrada.leerEntero(in, "Inserte Presupuesto, por defecto:", 50);
+            int presupuesto = Entrada.leerEntero(in, "Presupuesto", 50);
             Resultado resultado = SeleccionIniciativas.seleccionar(iniciativas, presupuesto);
             System.out.println("Iniciativas seleccionadas: " + formatearSeleccionadas(resultado.seleccionadas()));
             System.out.println("Costo total: " + resultado.costoTotal()
