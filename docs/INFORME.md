@@ -618,8 +618,204 @@ Todos incluyen a Lucia (obligatoria) y ninguno junta a Mateo con Sofia. `[Lucia,
 
 ## 8. B3 — Cadenas alternativas de difusión (Backtracking)
 
-_Pendiente — Entrega 2 — responsable: Fadi_
+### 8.1 Análisis del problema
+
+**Datos.** Una red de difusión dirigida y ponderada (`Grafo`) donde los vértices representan usuarios y las aristas dirigidas representan vínculos de transmisión con tiempos enteros positivos en minutos. Se reciben además un usuario de `origen`, un usuario de `destino`, un `tiempoMaximo` permitido en minutos, un límite de `maxIntermediarios` (cantidad máxima de usuarios entre el origen y el destino) y un conjunto de usuarios `excluidos`.
+
+**Restricciones.**
+
+- Los vínculos son **dirigidos**: que un usuario transmita a otro no implica la existencia del vínculo inverso.
+- **Sin ciclos ni repeticiones:** una cadena de difusión no puede repetir ningún usuario (cadenas simples).
+- **Usuarios excluidos:** ninguna cadena puede pasar por ninguno de los usuarios del conjunto de excluidos. Si el origen o el destino están excluidos, el resultado no contendrá cadenas.
+- **Límite de tiempo:** el tiempo total acumulado de la cadena no puede superar `tiempoMaximo`.
+- **Límite de intermediarios:** la cantidad de intermediarios (usuarios de la cadena sin contar origen ni destino) no puede superar `maxIntermediarios`.
+- **Validaciones:** parámetros inválidos (`tiempoMaximo < 0`, `maxIntermediarios < 0`, origen igual a destino o usuarios inexistentes en la red) disparan `IllegalArgumentException`.
+
+**Objetivo.** Encontrar y enumerar **todas** las cadenas alternativas de difusión que cumplan simultáneamente todas las restricciones anteriores, mostrando sus tiempos acumulados y destacando cuál de ellas es la más rápida.
+
+### 8.2 Estrategia elegida: Backtracking (recorrido en profundidad con podas)
+
+La estrategia elegida es **Backtracking**: se explora sistemáticamente el espacio de todos los caminos simples entre el origen y el destino construyendo el camino de a un vínculo por vez.
+
+Funciona así, en palabras simples:
+
+1. Se parte desde el usuario de origen con tiempo acumulado 0, con el origen marcado como visitado en un arreglo booleano `visitado[]` y agregado a la lista del `camino`.
+2. Para el usuario actual se examinan en orden sus vínculos salientes hacia cada `vecino`:
+   - Si el vecino ya está visitado o excluido, se descarta.
+   - Si el nuevo tiempo acumulado superaría `tiempoMaximo`, la rama se poda.
+   - Si el vecino no es el destino y agregarlo superaría `maxIntermediarios`, la rama se poda.
+3. Si supera las podas, se aplica la fase de **ELEGIR**: se marca `visitado[vecino] = true` y se agrega el vecino al camino.
+4. Se pasa a la fase de **EXPLORAR**: llamada recursiva desde el vecino sumando los minutos del vínculo.
+5. Al retornar de la recursión se ejecuta la fase de **DESHACER (backtrack)**: se desmarca `visitado[vecino] = false` y se remueve el vecino del camino (`camino.removeLast()`), permitiendo que ese usuario pueda formar parte de otras cadenas alternativas válidas que provengan de ramificaciones distintas.
+6. Al alcanzar el vértice destino se registra la cadena válida encontrada y se compara su tiempo contra la mejor hasta el momento para mantener actualizada la más rápida.
+
+**Árbol de exploración de un caso chico con podas.** Red de prueba: `A -> B (2)`, `A -> C (5)`, `B -> C (1)`, `B -> D (7)`, `C -> D (2)`, `C -> B (1)`. Búsqueda desde `A` hasta `D` con `tiempoMaximo = 7` y `maxIntermediarios = 2` (recorriendo los vecinos en su orden de inserción):
+
+```
+A (0 min)
+├── +B (2 min)
+│   ├── +C (3 min)
+│   │   ├── +D (5 min)  [A, B, C, D] (2 intermediarios, 5 min <= 7) -> VÁLIDA (más rápida)
+│   │   └── +B          descartado: ya visitado (ciclo evitado)
+│   └── +D (9 min)      PODA: tiempo (9 > 7)
+└── +C (5 min)
+    ├── +D (7 min)      [A, C, D] (1 intermediario, 7 min <= 7)     -> VÁLIDA
+    └── +B (6 min)
+        ├── +C          descartado: ya visitado (ciclo evitado)
+        └── +D (13 min) PODA: tiempo (13 > 7)
+```
+
+Resultado: 2 cadenas válidas (`[A, B, C, D]` de 5 min y `[A, C, D]` de 7 min), con `[A, B, C, D]` como la más rápida. Las ramas hacia `[A, B, D]` y `[A, C, B, D]` se podaron en cuanto su tiempo superó el límite de 7 minutos. Si además se pidiera a lo sumo 1 intermediario (`maxIntermediarios = 1`), las ramas `+B -> +C` y `+C -> +B` se cortarían con `PODA: intermediarios` y quedaría únicamente `[A, C, D]` (7 min).
+
+### 8.3 Justificación de la estrategia
+
+**Por qué Backtracking y no Dijkstra.** El algoritmo de Dijkstra (Greedy) está diseñado para encontrar de manera eficiente *una sola* cadena óptima global. En cambio, el requerimiento de esta funcionalidad exige explícitamente **enumerar todas las cadenas alternativas** que satisfagan restricciones contextuales fijadas por el usuario (tiempo tope, intermediarios y exclusiones). Backtracking es la estrategia adecuada porque recorre exhaustivamente el espacio de soluciones posibles y permite descartar subárboles completos mediante podas tempranas.
+
+**Diferencia clave con la Funcionalidad 2 (Dijkstra):** En la red de ejemplo institucional, Dijkstra encuentra la cadena óptima `Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina` con un tiempo de **27 minutos**. Sin embargo, esa cadena tiene **5 intermediarios** (`Carla, Bruno, Diego, Eva, Facu`). Cuando el usuario consulta la opción B3 fijando un límite de hasta **4 intermediarios**, dicha cadena queda excluida y la más rápida pasa a ser `Ana -> Carla -> Bruno -> Diego -> Eva -> Gina` con **28 minutos** (4 intermediarios). Esto evidencia la utilidad práctica de contar con cadenas alternativas bajo restricciones específicas.
+
+**Alternativas descartadas:**
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Dijkstra (Greedy) | Solo devuelve una cadena óptima y no permite enumerar caminos alternativos ni incorporar restricciones globales como intermediarios máximos. |
+| Programación Dinámica | No es aplicable porque se requiere enumerar la totalidad de los caminos simples (los subproblemas no se superponen para formar un único valor óptimo, y evitar ciclos requiere conocer el camino completo ya recorrido). |
+| Fuerza bruta sin podas | Explora absolutamente todas las ramificaciones hasta el final, consumiendo tiempo innecesario en caminos que ya violaron el tiempo máximo o la cantidad de intermediarios. |
+
+**Podas implementadas:**
+
+| Poda / restricción | Condición de corte | Justificación de que no pierde soluciones válidas |
+|---|---|---|
+| `// PODA: tiempo` | `tiempoAcumulado + minutos > tiempoMaximo` | Como todos los vínculos del grafo tienen costos estrictamente positivos (`minutos > 0`), cualquier extensión posterior de este camino acumulará un tiempo estrictamente mayor, imposibilitando alcanzar el destino con un tiempo `<= tiempoMaximo`. |
+| `// PODA: intermediarios` | `vecino != destino && camino.size() - 1 >= maxIntermediarios` | Si el vecino no es el destino final, incorporarlo al camino incrementa la cantidad de intermediarios; si ya se alcanzó la cota máxima permitida, cualquier camino que continúe por esa rama excederá irremediablemente el límite de intermediarios. |
+| Sin repetidos ni excluidos (`visitado[vecino]`) | `visitado[vecino] == true` | Garantiza que no se generen ciclos infinitos y que ningún usuario de la lista de excluidos sea visitado. |
+
+### 8.4 Dónde se ve en el código
+
+Clase `redsocial.difusion.CadenasAlternativas` y consola `redsocial.app.CadenasAlternativasConsola`:
+
+| Fase de la estrategia | Dónde está en el código |
+|---|---|
+| Inicialización y restricciones | `buscar`: carga de excluidos en `visitado[]`, rechazo si origen o destino están excluidos y validaciones de parámetros. |
+| Caso base (destino alcanzado) | `explorar`: `if (actual == destino)`, invoca a `registrar(...)`. |
+| Podas de búsqueda | `explorar`: comentarios `// PODA: tiempo` y `// PODA: intermediarios` antes de recursar. |
+| `// ELEGIR` | `explorar`: `visitado[vecino] = true; camino.add(vecino);` |
+| `// EXPLORAR` | `explorar`: llamada recursiva con el tiempo acumulado actualizado. |
+| `// DESHACER (backtrack)` | `explorar`: `camino.removeLast(); visitado[vecino] = false;` |
+| Registro y mejor cadena | `registrar`: encapsula la cadena en `CadenaAlternativa` inmutable y actualiza `mejor[0]` si mejora el tiempo estricto. |
+| Interfaz de usuario | `CadenasAlternativasConsola.ejecutar`: lectura con `Entrada` de origen, destino, tiempo, intermediarios y excluidos; presentación en consola. |
+
+### 8.5 Casos de prueba
+
+`CadenasAlternativasTest` (6 pruebas automatizadas):
+
+| Caso de prueba | Entrada | Resultado esperado | Qué verifica |
+|---|---|---|---|
+| `enumeraTodasLasCadenasSimplesYMasRapida` | Red con ciclo `B <-> C`, `A -> D`, máx 100 min, máx 10 intermediarios | 4 cadenas simples: `[A,B,D]` (9), `[A,B,C,D]` (5), `[A,C,D]` (7), `[A,C,B,D]` (13); más rápida: `[A,B,C,D]` con 5 min | Enumera exhaustivamente sin ciclos y halla la óptima. |
+| `filtraPorTiempoMaximo` | Misma red, tiempo máximo 7 | 2 cadenas: `[A,B,C,D]` (5) y `[A,C,D]` (7) | La poda y filtro por tiempo descartan caminos lentos. |
+| `filtraPorMaximoDeIntermediarios` | Misma red, máx 1 intermediario; y con máx 0 intermediarios | Con 1: `[A,B,D]` y `[A,C,D]` (más rápida: `[A,C,D]`, 7 min); con 0: lista vacía | Respeta la cota de intermediarios sin contar origen ni destino. |
+| `respetaUsuariosExcluidos` | Excluyendo `B`, excluyendo `B` y `C`, y excluyendo el destino `D` | Con `B` excluido: solo `[A,C,D]`; con ambos: vacía; con destino excluido: vacía | Ninguna cadena pasa por usuarios excluidos. |
+| `validacionesLanzanExcepcion` | Origen igual a destino, tiempos negativos, intermediarios negativos, usuarios inexistentes | `IllegalArgumentException` | Manejo robusto de errores de precondición. |
+| `coincideConEnumeracionExhaustivaEn100RedesAlAzar` | 100 redes dirigidas generadas al azar (semilla 99, 3 a 7 nodos, vínculos con 1-9 min, límites y exclusiones aleatorias) | Coincidencia idéntica en cantidad y contenido frente a una búsqueda exhaustiva sin podas | Garantía empírica formal de que las podas no pierden ninguna solución válida ni generan duplicados. |
+
+### 8.6 Complejidad temporal
+
+Sea **V** la cantidad de usuarios (vértices) y **E** la cantidad de vínculos (aristas):
+
+- **Sin podas en el peor caso:** En un grafo completo donde todo par de vértices está conectado, la cantidad de caminos simples distintos entre dos nodos es del orden de `(V - 2)!` (sumando sobre todas las longitudes posibles de `0` a `V - 2` intermediarios). Por lo tanto, la complejidad temporal en el peor caso teórico es **O(V!)**.
+- **Impacto de las podas:** En redes reales, las podas por tiempo máximo y cantidad máxima de intermediarios truncan drásticamente el árbol de exploración:
+  - Limitar la cantidad de intermediarios a `m` restringe la profundidad máxima del árbol de recursión a `m + 1`, reduciendo las combinaciones a `O(V^m)` en lugar de factorial.
+  - La poda por tiempo corta inmediatamente ramas tan pronto la suma de pesos sobrepasa el umbral prefijado.
+- **Espacio auxiliar:** Requiere **O(V)** memoria de pila de llamadas (la profundidad máxima es a lo sumo `V`) más `O(V)` para la lista del camino y el arreglo `visitado[]`, más el espacio necesario para almacenar las cadenas válidas que se devuelven al usuario.
+
+### 8.7 Ejemplo de ejecución
+
+Salida real de `java -jar target/red-social-universitaria-1.0.0.jar --demo` (opción 6, con los valores por defecto: `Ana -> Gina`, tiempo máximo `40`, máx intermediarios `4`, sin excluidos):
+
+```
+=== 6. B3 · Cadenas alternativas de difusión (Backtracking) ===
+Usuarios: [Ana, Bruno, Carla, Diego, Eva, Facu, Gina, Hugo]
+Origen [Ana]: Destino [Gina]: Tiempo máximo (min) [40]: Máximo de intermediarios [4]: Usuarios excluidos (separados por coma): Cadenas válidas: 10
+  Ana -> Bruno -> Diego -> Eva -> Facu -> Gina | 29 min
+  Ana -> Bruno -> Diego -> Eva -> Gina | 30 min
+  Ana -> Bruno -> Diego -> Facu -> Gina | 31 min
+  Ana -> Carla -> Bruno -> Diego -> Eva -> Gina | 28 min
+  Ana -> Carla -> Bruno -> Diego -> Facu -> Gina | 29 min
+  Ana -> Carla -> Diego -> Eva -> Facu -> Gina | 32 min
+  Ana -> Carla -> Diego -> Eva -> Gina | 33 min
+  Ana -> Carla -> Diego -> Facu -> Gina | 34 min
+  Ana -> Carla -> Eva -> Facu -> Gina | 33 min
+  Ana -> Carla -> Eva -> Gina | 34 min
+Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina | 28 min
+```
 
 ## 9. Verificación y pruebas
 
-_Pendiente — Entrega 2 — responsable: Fadi_
+### 9.1 Cómo se verifica el proyecto
+
+El proyecto cuenta con una batería de pruebas automatizadas con **JUnit Jupiter 5** y un modo de demostración integral (`--demo`) que ejecuta las 6 funcionalidades de punta a punta con sus valores por defecto. Los comandos de verificación son:
+
+```bash
+mvn test                                                      # ejecuta las 44 pruebas automatizadas (0 fallas)
+mvn package                                                   # compila, corre los tests y empaqueta el JAR ejecutable
+java -jar target/red-social-universitaria-1.0.0.jar --demo    # ejecuta las 6 funcionalidades con datos por defecto
+```
+
+Al ejecutar `mvn test` con las 6 funcionalidades integradas se obtienen **44 tests ejecutados, 0 fallas y 0 errores** distribuidos en 10 clases de prueba.
+
+### 9.2 Cobertura por clase de prueba
+
+| Clase de test | Cantidad de tests | Qué cubre |
+|---|---|---|
+| `EntradaTest` | 3 | Lectura por consola con valores por defecto ante líneas en blanco, recorte de espacios y validación de números enteros (`IllegalArgumentException`). |
+| `PublicacionTest` | 2 | Cálculo de relevancia (`reacciones + 2 x comentarios`) y validaciones de creación del modelo `Publicacion`. |
+| `MuroOrdenadorTest` | 5 | Ordenamiento Merge Sort propio por recencia y por relevancia, reglas de desempate, inmutabilidad de la lista de entrada y prueba de volumen con 5000 publicaciones al azar (`Random(42)`). |
+| `GrafoTest` | 4 | Alta idempotente de usuarios, vínculos dirigidos, conservación del menor tiempo por par ordenado y validaciones de argumentos. |
+| `CadenaMasRapidaTest` | 6 | Algoritmo de Dijkstra (Greedy): preferencia del menor tiempo sobre menos saltos, destinos inalcanzables, sentido de los vínculos, caso origen igual a destino, registro de decisiones en la traza y validaciones. |
+| `SeleccionIniciativasTest` | 6 | Mochila 0/1 con Programación Dinámica: contraejemplo clásico donde Greedy falla, casos borde (presupuesto 0, lista vacía, costos mayores al presupuesto), validaciones y comparación contra fuerza bruta en 300 casos al azar (`Random(42)`). |
+| `ConsultasDifusionTest` | 4 | Algoritmo de Floyd-Warshall (A1, Programación Dinámica): tiempos mínimos y reconstrucción de cadenas entre pares, pares inalcanzables y comparación exhaustiva contra Dijkstra en 100 redes al azar (`Random(2026)`). |
+| `FormacionEquiposTest` | 7 | Backtracking para equipos (B1): cobertura de habilidades, obligatorios, incompatibilidades simétricas, casos sin solución, validaciones y comparación contra fuerza bruta (`2^n` máscaras) en 300 casos al azar (`Random(11)`). |
+| `CadenasAlternativasTest` | 6 | Backtracking para cadenas alternativas (B3): enumeración simple en grafos con ciclos, podas por tiempo máximo e intermediarios, usuarios excluidos, validaciones y comparación contra enumeración exhaustiva sin podas en 100 redes al azar (`Random(99)`). |
+| `MainDemoTest` | 1 | Test de integración de punta a punta: invoca `Main.demo()` y verifica que la salida contenga literalmente todas las líneas clave de contrato de las 6 funcionalidades. |
+| **Total** | **44** | **Cobertura unitaria, de propiedades contra fuerza bruta y de integración completa.** |
+
+### 9.3 Comprobación de que no se usan ordenamientos del JDK y de presencia de estrategias
+
+La consigna prohíbe el uso de rutinas de ordenamiento provistas por el lenguaje para ordenar el muro, y el equipo extendió esa regla a todo `src/main`. Se verificó con `git grep`:
+
+```bash
+git grep -n -E "Arrays\.(parallelSort|sort)|Collections\.sort|\.sort\(|\.sorted\(|TreeMap|TreeSet" -- src/main
+```
+
+**Resultado:** salida vacía (`0` coincidencias en `src/main`).
+
+También se auditó cualquier aparición de `Comparator`:
+
+```bash
+git grep -n "Comparator" -- src/main
+```
+
+**Resultado:** en código ejecutable aparece únicamente en `CadenaMasRapida.java` para configurar la prioridad del *heap* binario (`PriorityQueue`) de Dijkstra (extraer el candidato no fijado de menor tiempo acumulado), nunca para ordenar una lista o colección; la única otra mención está en el Javadoc de `CriterioMuro.java` aclarando justamente que el muro define su propia interfaz y no usa `java.util.Comparator`.
+
+Asimismo, cada una de las 4 estrategias exigidas está explícitamente identificada en el código mediante su estructura y comentarios de fase:
+- **Divide y Conquista:** `// DIVIDIR`, `// CONQUISTAR`, `// COMBINAR` en `MuroOrdenador.java`.
+- **Greedy:** `// DECISIÓN GREEDY` y `// RELAJACIÓN` en `CadenaMasRapida.java`.
+- **Programación Dinámica:** `// CASO BASE`, `// RECURRENCIA`, `// RECONSTRUCCIÓN` en `SeleccionIniciativas.java` y `// CASO BASE`, `// AMPLIACIÓN`, `// RECURRENCIA` en `ConsultasDifusion.java`.
+- **Backtracking:** `// PODA: ...`, `// ELEGIR`, `// EXPLORAR`, `// DESHACER (backtrack)` en `FormacionEquipos.java` y `CadenasAlternativas.java`.
+
+### 9.4 Comparación de resultados del modo `--demo` contra los contratos
+
+| Opción / Funcionalidad | Valor esperado (`docs/CONTRATOS.md` §4 y §5) | Resultado obtenido en `--demo` | Estado |
+|---|---|---|---|
+| **1 · Muro de publicaciones** | Recencia: `6, 5, 4, 2, 3, 7, 1`<br>Relevancia: `5, 2, 3, 7, 1, 4, 6` | `Orden por recencia (ids): 6, 5, 4, 2, 3, 7, 1`<br>`Orden por relevancia (ids): 5, 2, 3, 7, 1, 4, 6` | Coincide |
+| **2 · Cadena más rápida (Dijkstra)** | `Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina`, 27 min, con traza de decisiones | `Decisiones tomadas:` (21 líneas)<br>`Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina \| Tiempo total: 27 min` | Coincide |
+| **3 · Selección de iniciativas (Mochila 0/1)** | Presupuesto 50: `#1, #2, #4`, costo 45, impacto 230, restante 5 | `Iniciativas seleccionadas: #1, #2, #4`<br>`Costo total: 45 \| Impacto obtenido: 230 \| Presupuesto restante: 5` | Coincide |
+| **4 · A1 Consultas entre todos los pares (Floyd-Warshall)** | Matriz 8x8; `Ana -> Gina` en 27 min; `Ana -> Hugo` sin cadena | Matriz idéntica;<br>`Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina \| Tiempo total: 27 min`<br>`No existe cadena de difusión de Ana a Hugo` | Coincide |
+| **5 · B1 Formación de equipos (Backtracking)** | 7 equipos válidos con `Lucia` fija y sin juntar a `Mateo` con `Sofia` | `Equipos válidos: 7` (los 7 equipos esperados en el mismo orden) | Coincide |
+| **6 · B3 Cadenas alternativas (Backtracking)** | `Ana -> Gina` (máx 40 min, 4 interm.): 10 cadenas; más rápida de 28 min (`Ana -> Carla -> Bruno -> Diego -> Eva -> Gina`) | `Cadenas válidas: 10`<br>`Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina \| 28 min` | Coincide |
+
+### 9.5 Limitaciones conocidas
+
+1. **Datos de ejemplo en memoria:** Las publicaciones, iniciativas, estudiantes y la red de difusión están precargados en código dentro de las clases de consola y `DatosRed` para facilitar la prueba inmediata y la reproducibilidad del modo `--demo`, sin persistencia en base de datos ni carga desde archivos externos.
+2. **Complejidad pseudopolinomial en la selección de iniciativas (Funcionalidad 3):** La tabla de programación dinámica tiene dimensión `(n + 1) x (P + 1)` y está acotada por `MAXIMO_CELDAS = 100_000_000`. Para presupuestos de millones de unidades convendría escalar los montos por su máximo común divisor.
+3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas la cantidad de soluciones crece como `C(n, k)` en B1 (con un costo `O(k)` para procesar cada una, dando un tiempo total `O(C(n, k) · k)`) y como `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
+4. **Inmutabilidad de la instantánea en A1 (Floyd-Warshall):** `ConsultasDifusion` precalcula las matrices `dist` y `siguiente` sobre el estado del `Grafo` al momento de su construcción (`O(V³)`). Si la red cambiara con alta frecuencia, sería necesario reconstruir la instancia o preferir consultas puntuales con Dijkstra.
