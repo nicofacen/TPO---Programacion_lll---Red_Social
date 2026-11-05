@@ -1,6 +1,6 @@
 # Contratos entre módulos
 
-Cada integrante genera su parte con Claude Code **sin código de referencia**. Para que las partes encajen al integrarse,
+Cada integrante trabaja en su parte. Para que las partes encajen al integrarse,
 todo lo que cruza la frontera entre dos personas está fijado en este archivo. **Si necesitás cambiar algo de acá, ver §7.**
 
 ## 1. Estructura de archivos y responsables
