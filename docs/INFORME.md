@@ -15,21 +15,24 @@
 | 1 | Cadena de difusión más rápida | Greedy | Dijkstra con cola de prioridad | `difusion/CadenaMasRapida` | O((V+E) log V) | 1 |
 | 1 | Selección de iniciativas | Programación Dinámica | Mochila 0/1 con tabla | `financiamiento/SeleccionIniciativas` | O(n·P) | 1 |
 | 2 – A1 | Consultas entre todos los usuarios | Programación Dinámica | Floyd-Warshall | `difusion/ConsultasDifusion` | O(V³) + O(1) por consulta | 2 |
-| 2 – B1 | Formación de equipos con restricciones | Backtracking | Incluir/excluir con podas | `equipos/FormacionEquipos` | O(C(n,k)·k) peor caso | 2 |
+| 2 – B1 | Formación de equipos con restricciones | Backtracking | Incluir/excluir con podas | `equipos/FormacionEquipos` | O(C(n+1,k)·(h+k)) peor caso | 2 |
 | 2 – B3 | Cadenas alternativas de difusión | Backtracking | DFS de caminos simples con podas | `difusion/CadenasAlternativas` | O(V!) peor caso | 2 |
 
-Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase.
+Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase. De la segunda etapa se eligieron A1 (bloque A) y B1 y B3 (bloque B), como pide la consigna. Notación de la tabla: `n` elementos (publicaciones, iniciativas o estudiantes), `P` presupuesto, `V` usuarios, `E` vínculos, `k` tamaño del equipo y `h` habilidades requeridas.
 
 ## 2. Decisiones y supuestos del equipo
 
 1. **Relevancia de una publicación.** La consigna no la define. Se adopta `relevancia = reacciones + 2 × comentarios`, porque un comentario implica más esfuerzo que una reacción. El peso es la constante `Publicacion.PESO_COMENTARIO`.
 2. **Un vínculo por par ordenado de usuarios.** Si se carga más de uno, `Grafo` conserva el de menor tiempo: uno más lento nunca mejora una cadena.
 3. **Usuarios identificados por nombre**, mapeados internamente a índices enteros para trabajar con arreglos.
-4. **Origen igual a destino.** En la cadena más rápida devuelve la cadena de un solo usuario con 0 minutos; en B3 se rechaza.
+4. **Origen igual a destino.** En la cadena más rápida y en A1 devuelve la cadena de un solo usuario con 0 minutos; en B3 se rechaza.
 5. **Intermediarios (B3):** los usuarios de la cadena sin contar origen ni destino.
 6. **Datos de ejemplo fijos** dentro de cada consola; el menú pide solo parámetros simples, siempre con valor por defecto.
 7. **Salida de consola** con caracteres ASCII para símbolos (`->`, `>=`, `infinito`).
-8. **Sin ordenamientos del JDK** en todo el código fuente.
+8. **Sin ordenamientos del JDK** en todo el código fuente. La `PriorityQueue` de Dijkstra usa un `Comparator` solo para extraer el candidato de menor tiempo: no ordena ninguna colección (ver sección 9.3).
+9. **Usuarios excluidos (B3).** Si el origen o el destino están excluidos no hay cadenas; un nombre excluido que no existe en la red se ignora.
+10. **No tener solución no es un error.** B1 y B3 devuelven una lista vacía cuando ninguna alternativa cumple las restricciones. Los errores de uso (usuario inexistente, parámetros inválidos) lanzan `IllegalArgumentException`, y las consolas que piden datos los muestran como `Error: …` sin cerrar el programa.
+11. **Tope de memoria en la mochila.** `SeleccionIniciativas` rechaza tablas de más de `100_000_000` celdas.
 
 ## 3. Funcionalidad 1 — Organización del muro de publicaciones (Divide y Conquista)
 
@@ -580,14 +583,14 @@ La comparación contra fuerza bruta es la que garantiza que las podas no pierden
 ### 7.6 Complejidad temporal
 
 - **Sin podas**, el árbol incluir/excluir tiene un nivel por candidato y dos ramas por nivel: **O(2^n)** nodos.
-- **Con la poda por cantidad**, solo se recorren ramas que todavía pueden llegar a `k` integrantes. En el peor caso (sin
-  incompatibilidades ni habilidades que poden) se generan todas las combinaciones de `k` entre `n`, y verificar y copiar cada equipo
-  cuesta `O(k)` gracias a los contadores de cobertura: **O(C(n, k) · k)**.
+- **Con la poda por cantidad**, solo se abren ramas que todavía pueden llegar a `k` integrantes. En el peor caso (sin incompatibilidades ni habilidades que poden) el árbol tiene `C(n, k)` hojas con un equipo completo y `C(n, k - 1)` hojas cortadas por esta poda. Como `C(n, k) + C(n, k - 1) = C(n + 1, k)` y cada nodo interno abre dos ramas, son exactamente **`2 · C(n + 1, k) - 1` nodos**.
+  Se comprobó contando las llamadas a `buscar` en una copia instrumentada del código, para `n` de 1 a 16 y todo `k` posible (136 casos). Por ejemplo, con `n = 16` y `k = 14` hay 120 equipos y 1359 nodos: contar solo los equipos subestimaría el trabajo.
+  Si `k <= n / 2`, `C(n + 1, k)` es menor que `2 · C(n, k)`, así que el orden coincide con el de la cantidad de equipos.
 - **Las podas por incompatibilidad y por habilidades** no cambian el peor caso, pero en la práctica eliminan subárboles enteros: en el
   ejemplo de 7.2 se cortan tres ramas antes de llegar a un equipo completo.
-- **Costo por nodo:** la poda por habilidades revisa `h` habilidades requeridas (`O(h)`) y la de incompatibilidad revisa los elegidos
-  (`O(k)`).
-- **Precálculo:** `O(n · h)` para `aporta` y `sufijo`; **espacio** `O(n · h + n²)` (incluida la matriz de incompatibles) más `O(n)` de pila.
+- **Costo por nodo: `O(h + k)`.** La poda por habilidades revisa las `h` habilidades requeridas, la de incompatibilidad revisa a lo sumo `k` elegidos, agregar o quitar un integrante actualiza sus contadores en `O(h)` y copiar un equipo completo cuesta `O(k)`.
+- **Total en el peor caso: O(C(n + 1, k) · (h + k))**, más la preparación.
+- **Preparación:** `O(n² + S + n · h)` para la matriz de incompatibles, `aporta` y `sufijo`, con `S` la suma de las habilidades declaradas; **espacio** `O(n · h + n²)` (incluida la matriz de incompatibles) más `O(n)` de pila.
 
 ### 7.7 Ejemplo de ejecución
 
@@ -817,5 +820,5 @@ Asimismo, cada una de las 4 estrategias exigidas está explícitamente identific
 
 1. **Datos de ejemplo en memoria:** Las publicaciones, iniciativas, estudiantes y la red de difusión están precargados en código dentro de las clases de consola y `DatosRed` para facilitar la prueba inmediata y la reproducibilidad del modo `--demo`, sin persistencia en base de datos ni carga desde archivos externos.
 2. **Complejidad pseudopolinomial en la selección de iniciativas (Funcionalidad 3):** La tabla de programación dinámica tiene dimensión `(n + 1) x (P + 1)` y está acotada por `MAXIMO_CELDAS = 100_000_000`. Para presupuestos de millones de unidades convendría escalar los montos por su máximo común divisor.
-3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas la cantidad de soluciones crece como `C(n, k)` en B1 (con un costo `O(k)` para procesar cada una, dando un tiempo total `O(C(n, k) · k)`) y como `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
+3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas la cantidad de soluciones crece como `C(n, k)` en B1 (el árbol de búsqueda tiene `2 · C(n + 1, k) - 1` nodos de costo `O(h + k)` cada uno, dando un tiempo total `O(C(n + 1, k) · (h + k))`, ver sección 7.6) y como `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
 4. **Inmutabilidad de la instantánea en A1 (Floyd-Warshall):** `ConsultasDifusion` precalcula las matrices `dist` y `siguiente` sobre el estado del `Grafo` al momento de su construcción (`O(V³)`). Si la red cambiara con alta frecuencia, sería necesario reconstruir la instancia o preferir consultas puntuales con Dijkstra.

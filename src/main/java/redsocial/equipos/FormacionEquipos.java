@@ -39,10 +39,10 @@ import redsocial.modelo.Estudiante;
  * </ul>
  *
  * <p><b>Complejidad temporal.</b> Sin podas, el árbol incluir/excluir tiene O(2^n) nodos. Con la poda por cantidad
- * solo se recorren ramas que pueden llegar a k integrantes: en el peor caso (sin restricciones que poden) se
- * generan las C(n, k) combinaciones y armar o verificar cada una cuesta O(k), es decir <b>O(C(n, k) · k)</b>.
+ * solo se abren ramas que pueden llegar a k integrantes: en el peor caso (sin restricciones que poden) el árbol tiene
+ * exactamente 2 · C(n + 1, k) - 1 nodos y cada uno cuesta O(h + k), es decir <b>O(C(n + 1, k) · (h + k))</b>.
  * Las podas por incompatibilidad y por habilidades reducen ese número en la práctica, pero no el peor caso.
- * Espacio: O(n · h) para las tablas precalculadas (h = habilidades requeridas) y O(n) de pila de recursión.</p>
+ * Espacio: O(n · h + n²) para las tablas y la matriz de incompatibles (h = habilidades requeridas) y O(n) de pila.</p>
  */
 public final class FormacionEquipos {
 
