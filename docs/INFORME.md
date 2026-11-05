@@ -198,7 +198,7 @@ La estructura de datos es `redsocial.grafo.Grafo`, con **lista de adyacencia** (
 | `agregarUsuario("Ana")` dos veces | Mismo índice, 1 usuario; `contiene("Z")` falso | Idempotencia del alta. |
 | minutos `0` y `-7`, `A->A`, nombre en blanco, `indiceDe("Nadie")` | `IllegalArgumentException` | Validación de entradas. |
 
-Resultado de la corrida completa: **13 pruebas, 0 fallas** (incluye las 3 de `EntradaTest`).
+Estas dos clases suman 10 pruebas (6 de `CadenaMasRapidaTest` y 4 de `GrafoTest`). La corrida completa del proyecto (`mvn test`) ejecuta **44 pruebas, 0 fallas** (detalle por clase en la sección 9.2).
 
 ### 4.6 Complejidad temporal
 
@@ -220,7 +220,7 @@ Salida real de `java -jar target/red-social-universitaria-1.0.0.jar --demo` (opc
 ```
 === 2. Cadena de difusión más rápida (Greedy: Dijkstra) ===
 Usuarios: [Ana, Bruno, Carla, Diego, Eva, Facu, Gina, Hugo]
-Origen [Ana]: Destino [Gina]: Decisiones tomadas:
+Origen [Por defecto: Ana]: Destino [Por defecto: Gina]: Decisiones tomadas:
   Inicio: tiempo[Ana] = 0 y el resto de los usuarios = infinito
   Se fija a Ana con tiempo mínimo 0 min (es el menor entre los usuarios no fijados)
     Relajación Ana -> Bruno (10 min): 0 + 10 = 10 < infinito -> se actualiza tiempo[Bruno] = 10
@@ -342,7 +342,7 @@ Iniciativas disponibles:
   #3 (costo: 30, impacto: 120)
   #4 (costo: 20, impacto: 90)
   #5 (costo: 25, impacto: 70)
-Presupuesto [50]: Iniciativas seleccionadas: #1, #2, #4
+Presupuesto [Por defecto: 50]: Iniciativas seleccionadas: #1, #2, #4
 Costo total: 45 | Impacto obtenido: 230 | Presupuesto restante: 5
 ```
 
@@ -455,8 +455,8 @@ Eva    -      19     16     26     0      6      8      -
 Facu   -      13     10     20     24     0      2      -      
 Gina   -      11     8      18     22     28     0      -      
 Hugo   1      9      6      16     20     26     28     0      
-Origen [Ana]: Destino [Gina]: Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina | Tiempo total: 27 min
-Origen [Ana]: Destino [Hugo]: No existe cadena de difusión de Ana a Hugo
+Origen [Por defecto: Ana]: Destino [Por defecto: Gina]: Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina | Tiempo total: 27 min
+Origen [Por defecto: Ana]: Destino [Por defecto: Hugo]: No existe cadena de difusión de Ana a Hugo
 ```
 
 La columna de Hugo es `-` salvo su propia diagonal, porque nadie le transmite a él. La cadena Ana -> Gina de 27 minutos coincide con la que
@@ -734,7 +734,7 @@ Salida real de `java -jar target/red-social-universitaria-1.0.0.jar --demo` (opc
 ```
 === 6. B3 · Cadenas alternativas de difusión (Backtracking) ===
 Usuarios: [Ana, Bruno, Carla, Diego, Eva, Facu, Gina, Hugo]
-Origen [Ana]: Destino [Gina]: Tiempo máximo (min) [40]: Máximo de intermediarios [4]: Usuarios excluidos (separados por coma): Cadenas válidas: 10
+Origen [Por defecto: Ana]: Destino [Por defecto: Gina]: Tiempo máximo (min) [Por defecto: 40]: Máximo de intermediarios [Por defecto: 4]: Usuarios excluidos (separados por coma): Cadenas válidas: 10
   Ana -> Bruno -> Diego -> Eva -> Facu -> Gina | 29 min
   Ana -> Bruno -> Diego -> Eva -> Gina | 30 min
   Ana -> Bruno -> Diego -> Facu -> Gina | 31 min

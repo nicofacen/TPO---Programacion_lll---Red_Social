@@ -35,7 +35,7 @@ java -jar target/red-social-universitaria-1.0.0.jar --demo   # corre todas las o
 ## Uso del menú
 
 Al ejecutar el jar sin argumentos aparece el menú; se elige una opción escribiendo su número y `0` sale.
-Cada opción usa datos de ejemplo fijos y pide solo parámetros simples: **con Enter se usa el valor por defecto** que figura entre corchetes.
+Cada opción usa datos de ejemplo fijos y pide solo parámetros simples: **con Enter se usa el valor por defecto** que figura entre corchetes (`[Por defecto: …]`).
 
 | Opción | Qué hace | Parámetros (por defecto) |
 |---|---|---|
@@ -44,7 +44,7 @@ Cada opción usa datos de ejemplo fijos y pide solo parámetros simples: **con E
 | 3 | Iniciativas a financiar con un presupuesto | Presupuesto (`50`) |
 | 4 | Tiempos mínimos entre todos los usuarios y dos consultas | Origen/destino (`Ana`→`Gina` y `Ana`→`Hugo`) |
 | 5 | Equipos válidos con restricciones | Datos de ejemplo de la consola |
-| 6 | Cadenas alternativas de difusión | Datos de ejemplo de la consola |
+| 6 | Todas las cadenas de difusión que cumplen las restricciones, destacando la más rápida | Origen (`Ana`), destino (`Gina`), tiempo máximo (`40` min), máximo de intermediarios (`4`) y usuarios excluidos (ninguno) |
 
 El modo `--demo` ejecuta todas las opciones registradas con sus valores por defecto, sin pedir nada.
 
@@ -56,13 +56,13 @@ Procesamiento inicial completo. Tiempos mínimos en minutos ('-' = sin cadena):
        Ana    Bruno  Carla  Diego  Eva    Facu   Gina   Hugo
 Ana    0      8      5      15     19     25     27     -
 ...
-Origen [Ana]: Destino [Gina]: Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina | Tiempo total: 27 min
-Origen [Ana]: Destino [Hugo]: No existe cadena de difusión de Ana a Hugo
+Origen [Por defecto: Ana]: Destino [Por defecto: Gina]: Cadena: Ana -> Carla -> Bruno -> Diego -> Eva -> Facu -> Gina | Tiempo total: 27 min
+Origen [Por defecto: Ana]: Destino [Por defecto: Hugo]: No existe cadena de difusión de Ana a Hugo
 ```
 
 ## Pruebas
 
-`mvn test` ejecuta los tests con JUnit 5. Cantidad verificada al escribir esto, por clase:
+`mvn test` ejecuta los tests con JUnit 5. Resultado verificado: **44 tests, 0 fallas, 0 errores**, por clase:
 
 | Clase de test | Tests |
 |---|---|
@@ -73,10 +73,12 @@ Origen [Ana]: Destino [Hugo]: No existe cadena de difusión de Ana a Hugo
 | `CadenaMasRapidaTest` | 6 |
 | `ConsultasDifusionTest` | 4 |
 | `SeleccionIniciativasTest` | 6 |
-| **Total** | **30** |
+| `FormacionEquiposTest` | 7 |
+| `CadenasAlternativasTest` | 6 |
+| `MainDemoTest` | 1 |
+| **Total** | **44** |
 
-A esto se suman los tests de B1 y B3 y el test de integración `MainDemoTest` (corre el `--demo` completo y verifica una línea clave por
-funcionalidad), que todavía no estaban integrados al escribir esto: **actualizar el total con el resultado real de `mvn test`** antes de la entrega.
+`MainDemoTest` es el test de integración: corre el `--demo` completo y verifica una línea clave por funcionalidad.
 
 ## Estrategias, clases y complejidad
 
