@@ -780,10 +780,10 @@ Al ejecutar `mvn test` con las 6 funcionalidades integradas se obtienen **44 tes
 
 ### 9.3 Comprobación de que no se usan ordenamientos del JDK y de presencia de estrategias
 
-La consigna prohíbe el uso de rutinas de ordenamiento provistas por el lenguaje o librerías externas para ordenar el muro, y el equipo extendió esa regla a todo `src/main`. Se verificó con `git grep`:
+La consigna prohíbe el uso de rutinas de ordenamiento provistas por el lenguaje para ordenar el muro, y el equipo extendió esa regla a todo `src/main`. Se verificó con `git grep`:
 
 ```bash
-git grep -n -E "Arrays\.(parallel)?sort|Collections\.sort|List\.sort|\.sorted\(|TreeMap|TreeSet" -- src/main
+git grep -n -E "Arrays\.(parallelSort|sort)|Collections\.sort|\.sort\(|\.sorted\(|TreeMap|TreeSet" -- src/main
 ```
 
 **Resultado:** salida vacía (`0` coincidencias en `src/main`).
@@ -816,6 +816,6 @@ Asimismo, cada una de las 4 estrategias exigidas está explícitamente identific
 ### 9.5 Limitaciones conocidas
 
 1. **Datos de ejemplo en memoria:** Las publicaciones, iniciativas, estudiantes y la red de difusión están precargados en código dentro de las clases de consola y `DatosRed` para facilitar la prueba inmediata y la reproducibilidad del modo `--demo`, sin persistencia en base de datos ni carga desde archivos externos.
-2. **Complejidad pseudopolinomial en la selección de iniciativas (Funcionalidad 3):** La tabla de programación dinámica tiene dimensión `(n + 1) x (P + 1)` y está acotada por `MAXIMO_CELDAS = 10_000_000`. Para presupuestos de millones de unidades convendría escalar los montos por su máximo común divisor.
-3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas el número de soluciones crece como `O(C(n, k) · k)` en B1 y `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
+2. **Complejidad pseudopolinomial en la selección de iniciativas (Funcionalidad 3):** La tabla de programación dinámica tiene dimensión `(n + 1) x (P + 1)` y está acotada por `MAXIMO_CELDAS = 100_000_000`. Para presupuestos de millones de unidades convendría escalar los montos por su máximo común divisor.
+3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas la cantidad de soluciones crece como `C(n, k)` en B1 (con un costo `O(k)` para procesar cada una, dando un tiempo total `O(C(n, k) · k)`) y como `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
 4. **Inmutabilidad de la instantánea en A1 (Floyd-Warshall):** `ConsultasDifusion` precalcula las matrices `dist` y `siguiente` sobre el estado del `Grafo` al momento de su construcción (`O(V³)`). Si la red cambiara con alta frecuencia, sería necesario reconstruir la instancia o preferir consultas puntuales con Dijkstra.
