@@ -40,7 +40,7 @@ public final class Main {
         OPCIONES[5] = new EquiposConsola();
 
         // 6 · B3 Cadenas alternativas (Fadi)
-        // OPCIONES[6] = new CadenasAlternativasConsola();
+        OPCIONES[6] = new CadenasAlternativasConsola();
     }
 
     private Main() { }
