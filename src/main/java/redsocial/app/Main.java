@@ -20,30 +20,24 @@ public final class Main {
     static final Opcion[] OPCIONES = new Opcion[7];
 
     static {
-        // ===== REGISTRO DE OPCIONES =====
-        // Cada integrante descomenta SOLO su línea cuando su clase *Consola ya existe.
-        // Las líneas están separadas a propósito para que Git combine los cambios sin conflictos.
-
-        // 1 · Muro de publicaciones (Nicolas)
+        // 1 · Muro de publicaciones
         OPCIONES[1] = new MuroConsola();
 
-        // 2 · Cadena de difusión más rápida (Lucas)
+        // 2 · Cadena de difusión más rápida
         OPCIONES[2] = new CadenaRapidaConsola();
 
-        // 3 · Selección de iniciativas (Fadi)
+        // 3 · Selección de iniciativas
         OPCIONES[3] = new IniciativasConsola();
 
-        // 4 · A1 Consultas entre todos los usuarios (Lucas)
+        // 4 · A1 Consultas entre todos los usuarios
         OPCIONES[4] = new ConsultasConsola();
 
-        // 5 · B1 Formación de equipos (Nicolas)
+        // 5 · B1 Formación de equipos
         OPCIONES[5] = new EquiposConsola();
 
-        // 6 · B3 Cadenas alternativas (Fadi)
+        // 6 · B3 Cadenas alternativas
         OPCIONES[6] = new CadenasAlternativasConsola();
     }
-
-    private Main() { }
 
     public static void main(String[] args) {
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));

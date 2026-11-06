@@ -11,12 +11,12 @@ El **informe** se encuentra en la carpeta docs
 
 | # | Funcionalidad | Estrategia | Entrega |
 |---|---|---|---|
-| 1 | Muro de publicaciones | Divide y Conquista (Merge Sort) | 1 — disponible |
-| 2 | Cadena de difusión más rápida | Greedy (Dijkstra) | 1 — disponible |
-| 3 | Selección de iniciativas | Programación Dinámica (mochila 0/1) | 1 — disponible |
-| 4 | A1: consultas entre todos los usuarios | Programación Dinámica (Floyd-Warshall) | 2 — disponible |
-| 5 | B1: equipos con restricciones | Backtracking (equipos) | 2 — disponible |
-| 6 | B3: cadenas alternativas | Backtracking (cadenas alternativas) | 2 — disponible |
+| 1 | Muro de publicaciones | Divide y Conquista (Merge Sort) | 1 |
+| 2 | Cadena de difusión más rápida | Greedy (Dijkstra) | 1 |
+| 3 | Selección de iniciativas | Programación Dinámica (mochila 0/1) | 1 |
+| 4 | A1: consultas entre todos los usuarios | Programación Dinámica (Floyd-Warshall) | 2 |
+| 5 | B1: equipos con restricciones | Backtracking (equipos) | 2 |
+| 6 | B3: cadenas alternativas | Backtracking (cadenas alternativas) | 2 |
 
 ## Requisitos
 

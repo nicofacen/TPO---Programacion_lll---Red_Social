@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test de integración: ejecuta el modo demo completo y verifica las líneas clave de la salida
- * (las de {@code docs/CONTRATOS.md} §4), una por funcionalidad.
+ * esperada, una por funcionalidad.
  */
 @DisplayName("Main.demo: las 6 funcionalidades de punta a punta")
 class MainDemoTest {

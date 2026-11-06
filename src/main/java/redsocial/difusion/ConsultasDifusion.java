@@ -19,7 +19,10 @@ import redsocial.grafo.Grafo;
  * <p><b>Por qué conviene aquí:</b> la consigna pide responder muchas consultas entre cualquier par de
  * usuarios. Repetir Dijkstra en cada consulta costaría O((V + E) log V) cada vez; con Floyd-Warshall
  * se paga O(V³) <b>una sola vez</b> (el procesamiento inicial, en el constructor) y cada consulta es
- * una lectura de la matriz, O(1). Con pocas consultas conviene Dijkstra; con muchas, esta técnica.</p>
+ * una lectura de la matriz, O(1). Con pocas consultas conviene ejecutar Dijkstra por consulta; con
+ * muchas consultas sobre una red estable conviene precalcular todos los pares (con Floyd-Warshall si
+ * la red es chica o densa, o corriendo Dijkstra desde cada origen en O(V · (V + E) log V) si la red
+ * fuera muy grande y rala).</p>
  *
  * <p><b>Complejidad:</b> tiempo O(V³) para el procesamiento inicial (triple bucle) y espacio O(V²) para
  * las matrices. La instancia refleja la red <b>al momento de construirla</b>: si después se agregan
