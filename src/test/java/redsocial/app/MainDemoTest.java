@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * Test de integración: ejecuta el modo demo completo y verifica las líneas clave de la salida
  * esperada, una por funcionalidad.
  */
-@DisplayName("Main.demo: las 6 funcionalidades de punta a punta")
+@DisplayName("Main.demo: las 7 funcionalidades de punta a punta")
 class MainDemoTest {
 
     private static final List<String> LINEAS_CLAVE = List.of(
@@ -33,10 +33,12 @@ class MainDemoTest {
             "Equipos válidos: 7",
             // 6 · B3 Cadenas alternativas (Backtracking)
             "Cadenas válidas: 10",
-            "Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina | 28 min");
+            "Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina | 28 min",
+            // 7 · A3 Selección de actividades compatibles (Programación Dinámica)
+            "Actividades seleccionadas: #4, #7, #5 | Interés total obtenido: 175");
 
     @Test
-    @DisplayName("La salida del demo contiene las líneas clave de las 6 funcionalidades")
+    @DisplayName("La salida del demo contiene las líneas clave de las 7 funcionalidades")
     void demoMuestraLasLineasClave() {
         PrintStream original = System.out;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();

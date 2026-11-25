@@ -17,8 +17,9 @@
 | 2 – A1 | Consultas entre todos los usuarios | Programación Dinámica | Floyd-Warshall | `difusion/ConsultasDifusion` | O(V³) + O(1) por consulta | 2 |
 | 2 – B1 | Formación de equipos con restricciones | Backtracking | Incluir/excluir con podas | `equipos/FormacionEquipos` | O(C(n+1,k)·(h+k)) peor caso | 2 |
 | 2 – B3 | Cadenas alternativas de difusión | Backtracking | DFS de caminos simples con podas | `difusion/CadenasAlternativas` | O(V!) peor caso | 2 |
+| 2 – A3 | Selección de actividades compatibles | Programación Dinámica | Intervalos ponderados (DP 1D + búsqueda binaria + Merge Sort propio) | `actividades/SeleccionActividades` | O(n log n) | 2 |
 
-Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase. De la segunda etapa se eligieron A1 (bloque A) y B1 y B3 (bloque B), como pide la consigna. Notación de la tabla: `n` elementos (publicaciones, iniciativas o estudiantes), `P` presupuesto, `V` usuarios, `E` vínculos, `k` tamaño del equipo y `h` habilidades requeridas.
+Las cuatro estrategias que exige la consigna (Divide y Conquista, Greedy, Programación Dinámica y Backtracking) están aplicadas y se reconocen en el código de cada clase. De la segunda etapa se implementaron A1 y A3 (bloque A, superando el mínimo de una) y B1 y B3 (bloque B). Notación de la tabla: `n` elementos (publicaciones, iniciativas, estudiantes o actividades), `P` presupuesto, `V` usuarios, `E` vínculos, `k` tamaño del equipo y `h` habilidades requeridas.
 
 ## 2. Decisiones y supuestos del equipo
 
@@ -215,7 +216,7 @@ La estructura de datos es `redsocial.grafo.Grafo`, con **lista de adyacencia** (
 | `agregarUsuario("Ana")` dos veces | Mismo índice, 1 usuario; `contiene("Z")` falso | Idempotencia del alta. |
 | minutos `0` y `-7`, `A->A`, nombre en blanco, `indiceDe("Nadie")` | `IllegalArgumentException` | Validación de entradas. |
 
-Estas dos clases suman 10 pruebas (6 de `CadenaMasRapidaTest` y 4 de `GrafoTest`). La corrida completa del proyecto (`mvn test`) ejecuta **44 pruebas, 0 fallas** (detalle por clase en la sección 9.2).
+Estas dos clases suman 10 pruebas (6 de `CadenaMasRapidaTest` y 4 de `GrafoTest`). La corrida completa del proyecto (`mvn test`) ejecuta **50 pruebas, 0 fallas** (detalle por clase en la sección 10.2).
 
 ### 4.6 Complejidad temporal
 
@@ -765,21 +766,148 @@ Origen [Por defecto: Ana]: Destino [Por defecto: Gina]: Tiempo máximo (min) [Po
 Más rápida: Ana -> Carla -> Bruno -> Diego -> Eva -> Gina | 28 min
 ```
 
-## 9. Verificación y pruebas
+## 9. A3 — Selección de actividades compatibles (Programación Dinámica)
 
-### 9.1 Cómo se verifica el proyecto
+### 9.1 Análisis del problema
 
-El proyecto cuenta con una batería de pruebas automatizadas con **JUnit Jupiter 5** y un modo de demostración integral (`--demo`) que ejecuta las 6 funcionalidades de punta a punta con sus valores por defecto. Los comandos de verificación son:
+**Datos.** Una lista de `n` actividades universitarias (`Actividad`), cada una con identificador (`id`), nombre descriptivo, hora de inicio (`inicio`), hora de finalización (`fin`) y un puntaje de interés entero no negativo (`interes`).
 
-```bash
-mvn test                                                      # ejecuta las 44 pruebas automatizadas (0 fallas)
-mvn package                                                   # compila, corre los tests y empaqueta el JAR ejecutable
-java -jar target/red-social-universitaria-1.0.0.jar --demo    # ejecuta las 6 funcionalidades con datos por defecto
+**Restricciones.**
+
+- Cada actividad tiene una duración positiva (`fin > inicio`), nombre no vacío e interés `>= 0`; cualquier violación o elemento nulo dispara `IllegalArgumentException`.
+- Dos actividades son **compatibles** si no se superponen. Según la consigna, una actividad puede comenzar exactamente en el mismo momento en que finaliza otra (`fin_a <= inicio_b`).
+- La lista original de entrada no se modifica; si está vacía, se devuelve una selección vacía con interés total `0`.
+- Se respeta la regla del proyecto de **no utilizar métodos de ordenamiento del JDK** en todo el código fuente.
+
+**Objetivo.** Seleccionar el subconjunto de actividades compatibles que maximice el **interés total**, mostrando las actividades elegidas (en orden cronológico) y el interés total obtenido.
+
+### 9.2 Estrategia elegida: Programación Dinámica (planificación de intervalos ponderados)
+
+El problema corresponde al clásico **Weighted Interval Scheduling** (planificación de intervalos con peso), resuelto en tres pasos:
+
+1. **Ordenamiento por hora de finalización creciente:** se ordenan las actividades `1..n` por `fin` creciente (desempatando por `inicio` y luego `id`) usando un **Merge Sort propio** (`O(n log n)`).
+2. **Predecesor compatible `p[i]`:** para cada actividad `i` (1-indexada), se busca con **búsqueda binaria** el mayor índice `j < i` tal que `fin[j] <= inicio[i]` (o `0` si ninguna actividad anterior termina a tiempo).
+3. **Programación Dinámica en arreglo 1D:**
+   - **Subproblema:** `dp[i]` = máximo interés total alcanzable considerando solo las primeras `i` actividades (ya ordenadas por fin).
+   - **Caso base:** `dp[0] = 0` (sin actividades consideradas, el interés es 0).
+   - **Recurrencia:** para cada actividad `i = 1..n`, o bien se la excluye (queda `dp[i - 1]`) o bien se la incluye junto con el mejor subconjunto compatible anterior (`interes[i] + dp[p[i]]`):
+     `dp[i] = max(dp[i - 1], interes[i] + dp[p[i]])`.
+   - **Reconstrucción:** se recorre `dp` hacia atrás desde `i = n`: si `dp[i] != dp[i - 1]`, la actividad `i` mejoró estrictamente el óptimo, por lo que se la incluye y se salta a `p[i]`; en caso contrario se omite y se retrocede a `i - 1`. Al finalizar se invierte el orden para presentar las actividades cronológicamente.
+
+**Evolución de la tabla `dp` con las 7 actividades de ejemplo** (ya ordenadas por `fin`):
+
+| `i` | Actividad | Horario | `interes` | `p[i]` | `dp[i - 1]` vs `interes + dp[p[i]]` | `dp[i]` |
+|---|---|---|---|---|---|---|
+| 0 | *(ninguna)* | — | — | — | caso base | **0** |
+| 1 | `#2` Charla de IA | 09:00 - 11:00 | 30 | 0 | `max(0, 30 + 0)` | **30** |
+| 2 | `#4` Taller de Git | 10:00 - 13:00 | 80 | 0 | `max(30, 80 + 0)` | **80** |
+| 3 | `#6` Club de Algoritmos | 11:00 - 14:00 | 40 | 1 (`#2`) | `max(80, 40 + 30)` | **80** |
+| 4 | `#1` Hackatón Express | 12:00 - 15:00 | 95 | 1 (`#2`) | `max(80, 95 + 30)` | **125** |
+| 5 | `#7` Mesa de Proyectos | 13:00 - 15:00 | 55 | 2 (`#4`) | `max(125, 55 + 80)` | **135** |
+| 6 | `#3` Feria de Becas | 14:00 - 16:00 | 45 | 3 (`#6`) | `max(135, 45 + 80)` | **135** |
+| 7 | `#5` Cierre Musical | 15:00 - 17:00 | 40 | 5 (`#7`) | `max(135, 40 + 135)` | **175** |
+
+Reconstrucción desde `i = 7`: `dp[7] (175) != dp[6] (135)` -> elige `#5` y salta a `p[7] = 5`; `dp[5] (135) != dp[4] (125)` -> elige `#7` y salta a `p[5] = 2`; `dp[2] (80) != dp[1] (30)` -> elige `#4` y salta a `p[2] = 0`. Selección final en orden cronológico: **`#4`, `#7`, `#5`** con interés total **175** (`80 + 55 + 40`), aprovechando que `#7` comienza exactamente cuando termina `#4` (`13:00`) y `#5` comienza cuando termina `#7` (`15:00`).
+
+### 9.3 Justificación de la estrategia
+
+El problema cumple las dos propiedades de **Programación Dinámica**:
+
+1. **Subestructura óptima:** una solución óptima sobre las actividades `1..i` necesariamente contiene una solución óptima sobre `1..i-1` (si excluye a `i`) o sobre `1..p[i]` (si incluye a `i`).
+2. **Subproblemas superpuestos:** múltiples actividades comparten el mismo prefijo compatible `p[i]` (en el ejemplo, tanto `#6` como `#1` consultan `dp[1]`). Guardar `dp[0..n]` calcula cada prefijo una sola vez.
+
+**Por qué NO sirve Greedy.** En la variante sin puntajes (maximizar la *cantidad* de actividades), Greedy por menor hora de finalización es óptimo. Sin embargo, al incorporar un puntaje de interés por actividad, **ninguna** heurística voraz garantiza el óptimo. En las mismas 7 actividades del ejemplo:
+
+- **Greedy por menor hora de fin:** elige `#2` (30), `#6` (40) y `#3` (45) -> interés **115**.
+- **Greedy por mayor interés individual:** elige `#1` (95), luego `#5` (40) y `#2` (30) -> interés **165**.
+- **Greedy por mayor razón interés/hora:** elige `#1` (31,7/h, 95), `#5` (20/h, 40) y `#2` (15/h, 30) -> interés **165**.
+- **Óptimo real (Programación Dinámica):** `#4` (80) + `#7` (55) + `#5` (40) = **175**.
+
+**Alternativas descartadas.**
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Greedy (menor hora de fin, mayor interés o mayor interés/duración) | No garantiza el óptimo cuando las actividades tienen distintos puntajes de interés (ver contraejemplo arriba). |
+| Fuerza bruta / Backtracking sin memorización | Explora los `2^n` subconjuntos posibles (`O(2^n)`), recalculando los mismos prefijos una y otra vez. Se utiliza en los tests como referencia para verificar la DP. |
+| Búsqueda lineal para `p[i]` en lugar de búsqueda binaria | Funciona correctamente, pero eleva la complejidad total de `O(n log n)` a `O(n²)` sin simplificar significativamente el código. |
+
+### 9.4 Dónde se ve en el código
+
+Clases `redsocial.modelo.Actividad`, `redsocial.actividades.SeleccionActividades` y `redsocial.app.ActividadesConsola`:
+
+| Fase de la estrategia | Dónde está en el código |
+|---|---|
+| Modelo y compatibilidad | `Actividad`: valida nombre, horarios (`fin > inicio`), interés `>= 0` y define `esCompatibleCon` (`fin <= inicio`). |
+| Ordenamiento propio | `ordenarPorFin`, `mergeSort`, `combinar`, `comparar`: Merge Sort propio por `fin`, luego `inicio`, luego `id` (sin usar el JDK). |
+| `// BÚSQUEDA BINARIA` | `ultimaCompatible`: busca sobre `ordenadas[0..indice-1]` la última actividad con `!fin.isAfter(inicio)`. |
+| `// CASO BASE` | `construirTabla`: `int[] dp = new int[n + 1]` deja `dp[0] = 0`. |
+| `// RECURRENCIA` | `construirTabla`: `dp[i] = Math.max(dp[i - 1], ordenadas[i - 1].interes() + dp[p[i]])`. |
+| `// RECONSTRUCCIÓN` | `seleccionar`: recorre `i` desde `n` hasta `1`; si `dp[i] != dp[i - 1]` agrega `ordenadas[i - 1]` y salta a `p[i]`; si no, `i--`. Al final invierte la lista. |
+| Presentación | `ActividadesConsola` (opción 7 del menú): muestra la tabla de actividades disponibles, la tabla de elegidas en orden cronológico y el interés total. |
+
+### 9.5 Casos de prueba
+
+`SeleccionActividadesTest` (6 pruebas automatizadas):
+
+| Caso de prueba | Entrada | Resultado esperado | Qué verifica |
+|---|---|---|---|
+| `superaHeuristicasGreedy` | Las 7 actividades del ejemplo (desordenadas) | Elegidas `[#4, #7, #5]`, interés `175` | Supera los resultados subóptimos de Greedy por menor fin (`115`), mayor interés (`165`) y mayor interés/hora (`165`). |
+| `compatibilidadEnElLimiteHorario` | Cadena `09:00-11:00`, `11:00-13:00`, `13:00-14:30` más `10:59-12:00` | Elegidas `[#1, #2, #3]`, interés `60` | Permite `fin == inicio` y rechaza superposiciones de 1 minuto. |
+| `casosBorde` | Lista vacía; una sola actividad; actividades con interés `0` | Vacía con `0`; la única actividad; omite actividades innecesarias de interés `0` | Casos borde de `dp[0]` y desempate en reconstrucción. |
+| `noModificaListaOriginal` | Lista mutable desordenada | La lista original queda intacta y el resultado sale en orden cronológico | Inmutabilidad de la entrada y orden de salida. |
+| `validaciones` | Nombre en blanco, horas nulas, `fin <= inicio`, interés negativo, lista o elemento nulo | `IllegalArgumentException` | Cumplimiento de precondiciones del dominio. |
+| `coincideConFuerzaBrutaEn300CasosAlAzar` | 300 casos aleatorios (`Random(77)`, `n` entre 1 y 12, horarios y puntajes al azar) | Igual interés óptimo que `fuerzaBruta` (`2^n`), actividades sin superposición y suma coherente | Exactitud del algoritmo, la búsqueda binaria y la reconstrucción frente a fuerza bruta. |
+
+### 9.6 Complejidad temporal
+
+Sea **n** la cantidad de actividades:
+
+- **Ordenar por hora de finalización (Merge Sort propio):** `O(n log n)`.
+- **Calcular `p[1..n]` mediante búsqueda binaria:** `n` búsquedas de `O(log n)` cada una -> `O(n log n)`.
+- **Llenar el arreglo `dp[0..n]`:** un solo bucle de `n` iteraciones con trabajo `O(1)` por iteración -> `O(n)`.
+- **Reconstruir e invertir la lista seleccionada:** recorre a lo sumo `n` índices -> `O(n)`.
+
+**Total: tiempo O(n log n) y espacio auxiliar O(n)** (para el arreglo ordenado, el auxiliar del Merge Sort, `p[]` y `dp[]`).
+
+### 9.7 Ejemplo de ejecución
+
+Salida real de `java -jar target/red-social-universitaria-1.0.0.jar --demo` (opción 7):
+
+```
+=== 7. A3 · Selección de actividades compatibles (Programación Dinámica: intervalos ponderados) ===
+Actividades disponibles (una actividad puede comenzar cuando finaliza otra):
+  ID   Actividad            Horario        Interés
+  #1   Hackatón Express     12:00 - 15:00       95
+  #2   Charla de IA         09:00 - 11:00       30
+  #3   Feria de Becas       14:00 - 16:00       45
+  #4   Taller de Git        10:00 - 13:00       80
+  #5   Cierre Musical       15:00 - 17:00       40
+  #6   Club de Algoritmos   11:00 - 14:00       40
+  #7   Mesa de Proyectos    13:00 - 15:00       55
+
+Actividades elegidas (en orden cronológico):
+  ID   Actividad            Horario        Interés
+  #4   Taller de Git        10:00 - 13:00       80
+  #7   Mesa de Proyectos    13:00 - 15:00       55
+  #5   Cierre Musical       15:00 - 17:00       40
+Actividades seleccionadas: #4, #7, #5 | Interés total obtenido: 175
 ```
 
-Al ejecutar `mvn test` con las 6 funcionalidades integradas se obtienen **44 tests ejecutados, 0 fallas y 0 errores** distribuidos en 10 clases de prueba.
+## 10. Verificación y pruebas
 
-### 9.2 Cobertura por clase de prueba
+### 10.1 Cómo se verifica el proyecto
+
+El proyecto cuenta con una batería de pruebas automatizadas con **JUnit Jupiter 5** y un modo de demostración integral (`--demo`) que ejecuta las 7 funcionalidades de punta a punta con sus valores por defecto. Los comandos de verificación son:
+
+```bash
+mvn test                                                      # ejecuta las 50 pruebas automatizadas (0 fallas)
+mvn package                                                   # compila, corre los tests y empaqueta el JAR ejecutable
+java -jar target/red-social-universitaria-1.0.0.jar --demo    # ejecuta las 7 funcionalidades con datos por defecto
+```
+
+Al ejecutar `mvn test` con las 7 funcionalidades integradas se obtienen **50 tests ejecutados, 0 fallas y 0 errores** distribuidos en 11 clases de prueba.
+
+### 10.2 Cobertura por clase de prueba
 
 | Clase de test | Cantidad de tests | Qué cubre |
 |---|---|---|
@@ -792,22 +920,23 @@ Al ejecutar `mvn test` con las 6 funcionalidades integradas se obtienen **44 tes
 | `ConsultasDifusionTest` | 4 | Algoritmo de Floyd-Warshall (A1, Programación Dinámica): tiempos mínimos y reconstrucción de cadenas entre pares, pares inalcanzables y comparación exhaustiva contra Dijkstra en 100 redes al azar (`Random(2026)`). |
 | `FormacionEquiposTest` | 7 | Backtracking para equipos (B1): cobertura de habilidades, obligatorios, incompatibilidades simétricas, casos sin solución, validaciones y comparación contra fuerza bruta (`2^n` máscaras) en 300 casos al azar (`Random(11)`). |
 | `CadenasAlternativasTest` | 6 | Backtracking para cadenas alternativas (B3): enumeración simple en grafos con ciclos, podas por tiempo máximo e intermediarios, usuarios excluidos, validaciones y comparación contra enumeración exhaustiva sin podas en 100 redes al azar (`Random(99)`). |
-| `MainDemoTest` | 1 | Test de integración de punta a punta: invoca `Main.demo()` y verifica que la salida contenga literalmente todas las líneas clave esperadas de las 6 funcionalidades. |
-| **Total** | **44** | **Cobertura unitaria, de propiedades contra fuerza bruta y de integración completa.** |
+| `SeleccionActividadesTest` | 6 | Intervalos ponderados con Programación Dinámica (A3): contraejemplo donde fallan las heurísticas Greedy, compatibilidad en el límite horario (`fin == inicio`), casos borde, inmutabilidad, validaciones y comparación contra fuerza bruta (`2^n`) en 300 casos al azar (`Random(77)`). |
+| `MainDemoTest` | 1 | Test de integración de punta a punta: invoca `Main.demo()` y verifica que la salida contenga literalmente todas las líneas clave esperadas de las 7 funcionalidades. |
+| **Total** | **50** | **Cobertura unitaria, de propiedades contra fuerza bruta y de integración completa.** |
 
-### 9.3 Cumplimiento de restricciones e identificación de estrategias en el código
+### 10.3 Cumplimiento de restricciones e identificación de estrategias en el código
 
-En todo `src/main` no se utiliza ninguna utilidad de ordenamiento provista por el JDK (`Arrays.sort`, `Arrays.parallelSort`, `Collections.sort`, `List.sort`, `Stream.sorted`, `TreeMap` ni `TreeSet`). La única aparición de `Comparator` en código ejecutable está en `CadenaMasRapida.java` para definir la prioridad del *heap* binario (`PriorityQueue`) de Dijkstra y extraer el candidato no fijado de menor tiempo acumulado, nunca para ordenar una colección; el muro de publicaciones define su propia interfaz `CriterioMuro`.
+En todo `src/main` no se utiliza ninguna utilidad de ordenamiento provista por el JDK (`Arrays.sort`, `Arrays.parallelSort`, `Collections.sort`, `List.sort`, `Stream.sorted`, `TreeMap` ni `TreeSet`). La única aparición de `Comparator` en código ejecutable está en `CadenaMasRapida.java` para definir la prioridad del *heap* binario (`PriorityQueue`) de Dijkstra y extraer el candidato no fijado de menor tiempo acumulado, nunca para ordenar una colección; el muro de publicaciones define su propia interfaz `CriterioMuro` y la selección de actividades (A3) implementa su propio Merge Sort por hora de finalización.
 
 Cada una de las 4 estrategias exigidas está identificada en el código mediante su estructura y comentarios de fase:
 - **Divide y Conquista:** `// DIVIDIR`, `// CONQUISTAR`, `// COMBINAR` en `MuroOrdenador.java`.
 - **Greedy:** `// DECISIÓN GREEDY` y `// RELAJACIÓN` en `CadenaMasRapida.java`.
-- **Programación Dinámica:** `// CASO BASE`, `// RECURRENCIA`, `// RECONSTRUCCIÓN` en `SeleccionIniciativas.java` y `// CASO BASE`, `// AMPLIACIÓN`, `// RECURRENCIA` en `ConsultasDifusion.java`.
+- **Programación Dinámica:** `// CASO BASE`, `// RECURRENCIA`, `// RECONSTRUCCIÓN` en `SeleccionIniciativas.java`, `// CASO BASE`, `// AMPLIACIÓN`, `// RECURRENCIA` en `ConsultasDifusion.java` y `// BÚSQUEDA BINARIA`, `// CASO BASE`, `// RECURRENCIA`, `// RECONSTRUCCIÓN` en `SeleccionActividades.java`.
 - **Backtracking:** `// PODA: ...`, `// ELEGIR`, `// EXPLORAR`, `// DESHACER (backtrack)` en `FormacionEquipos.java` y `CadenasAlternativas.java`.
 
-### 9.4 Resumen de salidas del modo `--demo`
+### 10.4 Resumen de salidas del modo `--demo`
 
-El modo `--demo` (verificado automáticamente por `MainDemoTest`) ejecuta las 6 funcionalidades con sus datos y parámetros por defecto, produciendo los siguientes resultados:
+El modo `--demo` (verificado automáticamente por `MainDemoTest`) ejecuta las 7 funcionalidades con sus datos y parámetros por defecto, produciendo los siguientes resultados:
 
 | Opción / Funcionalidad | Entrada por defecto | Resultado en `--demo` |
 |---|---|---|
@@ -817,10 +946,12 @@ El modo `--demo` (verificado automáticamente por `MainDemoTest`) ejecuta las 6 
 | **4 · A1 Consultas entre todos los pares (Floyd-Warshall)** | Red de 8 usuarios; consultas `Ana -> Gina` y `Ana -> Hugo` | Matriz 8x8 de tiempos mínimos; `Ana -> Gina` en `27 min` y `Ana -> Hugo` sin cadena de difusión |
 | **5 · B1 Formación de equipos (Backtracking)** | 6 estudiantes, tamaño `3`, 4 habilidades, `Lucia` obligatoria, `Mateo` y `Sofia` incompatibles | `7` equipos válidos |
 | **6 · B3 Cadenas alternativas (Backtracking)** | `Ana -> Gina`, máx `40 min`, hasta `4` intermediarios, sin excluidos | `10` cadenas válidas; más rápida: `Ana -> Carla -> Bruno -> Diego -> Eva -> Gina` (`28 min`) |
+| **7 · A3 Selección de actividades compatibles (DP)** | 7 actividades universitarias con horarios y puntajes de interés | Seleccionadas: `#4, #7, #5` \| Interés total obtenido: `175` |
 
-### 9.5 Limitaciones conocidas
+### 10.5 Limitaciones conocidas
 
-1. **Datos de ejemplo en memoria:** Las publicaciones, iniciativas, estudiantes y la red de difusión están precargados en código dentro de las clases de consola y `DatosRed` para facilitar la prueba inmediata y la reproducibilidad del modo `--demo`, sin persistencia en base de datos ni carga desde archivos externos.
+1. **Datos de ejemplo en memoria:** Las publicaciones, iniciativas, estudiantes, actividades y la red de difusión están precargados en código dentro de las clases de consola y `DatosRed` para facilitar la prueba inmediata y la reproducibilidad del modo `--demo`, sin persistencia en base de datos ni carga desde archivos externos.
 2. **Complejidad pseudopolinomial en la selección de iniciativas (Funcionalidad 3):** La tabla de programación dinámica tiene dimensión `(n + 1) x (P + 1)` y está acotada por `MAXIMO_CELDAS = 100_000_000`. Para presupuestos de millones de unidades convendría escalar los montos por su máximo común divisor.
 3. **Costo exponencial/factorial de peor caso en B1 y B3 (Backtracking):** Como ambas funcionalidades exigen enumerar *todas* las soluciones válidas, en instancias densas con restricciones laxas la cantidad de soluciones crece como `C(n, k)` en B1 (el árbol de búsqueda tiene `2 · C(n + 1, k) - 1` nodos de costo `O(h + k)` cada uno, dando un tiempo total `O(C(n + 1, k) · (h + k))`, ver sección 7.6) y como `O(V!)` en B3. Las podas implementadas reducen drásticamente las ramas exploradas cuando existen restricciones activas, pero no alteran la cota asintótica del peor caso.
 4. **Inmutabilidad de la instantánea en A1 (Floyd-Warshall):** `ConsultasDifusion` precalcula las matrices `dist` y `siguiente` sobre el estado del `Grafo` al momento de su construcción (`O(V³)`). Si la red cambiara con alta frecuencia, sería necesario reconstruir la instancia o preferir consultas puntuales con Dijkstra.
+5. **Horarios dentro de una misma jornada en A3:** Las actividades se modelan con `LocalTime` y duración estrictamente positiva dentro del mismo día (`fin > inicio`); si se necesitaran jornadas de varios días consecutivos habría que utilizar `LocalDateTime`.

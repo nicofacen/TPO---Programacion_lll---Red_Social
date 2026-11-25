@@ -16,8 +16,8 @@ import java.util.Scanner;
  */
 public final class Main {
 
-    /** La posición es el número de opción (1 a 6). La posición 0 no se usa. */
-    static final Opcion[] OPCIONES = new Opcion[7];
+    /** La posición es el número de opción (1 a 7). La posición 0 no se usa. */
+    static final Opcion[] OPCIONES = new Opcion[8];
 
     static {
         // 1 · Muro de publicaciones
@@ -37,6 +37,9 @@ public final class Main {
 
         // 6 · B3 Cadenas alternativas
         OPCIONES[6] = new CadenasAlternativasConsola();
+
+        // 7 · A3 Selección de actividades compatibles
+        OPCIONES[7] = new ActividadesConsola();
     }
 
     public static void main(String[] args) {

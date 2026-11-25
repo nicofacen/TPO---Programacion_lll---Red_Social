@@ -17,6 +17,7 @@ El **informe** se encuentra en la carpeta docs
 | 4 | A1: consultas entre todos los usuarios | Programación Dinámica (Floyd-Warshall) | 2 |
 | 5 | B1: equipos con restricciones | Backtracking (equipos) | 2 |
 | 6 | B3: cadenas alternativas | Backtracking (cadenas alternativas) | 2 |
+| 7 | A3: selección de actividades compatibles | Programación Dinámica (intervalos ponderados) | 2 |
 
 ## Requisitos
 
@@ -45,6 +46,7 @@ Cada opción usa datos de ejemplo fijos y pide solo parámetros simples: **con E
 | 4 | Tiempos mínimos entre todos los usuarios y dos consultas | Origen/destino (`Ana`→`Gina` y `Ana`→`Hugo`) |
 | 5 | Equipos válidos con restricciones | Datos de ejemplo de la consola |
 | 6 | Todas las cadenas de difusión que cumplen las restricciones, destacando la más rápida | Origen (`Ana`), destino (`Gina`), tiempo máximo (`40` min), máximo de intermediarios (`4`) y usuarios excluidos (ninguno) |
+| 7 | Actividades compatibles con el mayor interés total | Datos de ejemplo de la consola |
 
 El modo `--demo` ejecuta todas las opciones registradas con sus valores por defecto, sin pedir nada.
 
@@ -62,7 +64,7 @@ Origen [Por defecto: Ana]: Destino [Por defecto: Hugo]: No existe cadena de difu
 
 ## Pruebas
 
-`mvn test` ejecuta los tests con JUnit 5. Resultado verificado: **44 tests, 0 fallas, 0 errores**, por clase:
+`mvn test` ejecuta los tests con JUnit 5. Resultado verificado: **50 tests, 0 fallas, 0 errores**, por clase:
 
 | Clase de test | Tests |
 |---|---|
@@ -75,8 +77,9 @@ Origen [Por defecto: Ana]: Destino [Por defecto: Hugo]: No existe cadena de difu
 | `SeleccionIniciativasTest` | 6 |
 | `FormacionEquiposTest` | 7 |
 | `CadenasAlternativasTest` | 6 |
+| `SeleccionActividadesTest` | 6 |
 | `MainDemoTest` | 1 |
-| **Total** | **44** |
+| **Total** | **50** |
 
 `MainDemoTest` es el test de integración: corre el `--demo` completo y verifica una línea clave por funcionalidad.
 
@@ -90,6 +93,7 @@ Origen [Por defecto: Ana]: Destino [Por defecto: Hugo]: No existe cadena de difu
 | 4 | Programación Dinámica (Floyd-Warshall) | `difusion/ConsultasDifusion` | O(V³) de preproceso; consulta O(1) |
 | 5 | Backtracking | `equipos/FormacionEquipos` | Exponencial en el peor caso, reducido por las podas |
 | 6 | Backtracking | `difusion/CadenasAlternativas` | Exponencial en el peor caso, reducido por las podas |
+| 7 | Programación Dinámica (intervalos ponderados) | `actividades/SeleccionActividades` | O(n log n) |
 
 ## Estructura de paquetes
 
@@ -98,12 +102,13 @@ Bajo `src/main/java/redsocial/`:
 | Paquete | Contenido |
 |---|---|
 | `app` | Menú (`Main`, `Opcion`, `Entrada`), `DatosRed` y las consolas de cada funcionalidad |
-| `modelo` | Datos del dominio: `Publicacion`, `Iniciativa`, `Estudiante` |
+| `modelo` | Datos del dominio: `Publicacion`, `Iniciativa`, `Estudiante`, `Actividad` |
 | `muro` | `CriterioMuro`, `MuroOrdenador` (Merge Sort) |
 | `grafo` | `Grafo` de la red de difusión |
 | `difusion` | `CadenaMasRapida`, `ConsultasDifusion`, `CadenasAlternativas`, `ResultadoCamino` |
 | `financiamiento` | `SeleccionIniciativas` |
 | `equipos` | `FormacionEquipos` |
+| `actividades` | `SeleccionActividades` |
 
 Los tests están en `src/test/java/redsocial/` con los mismos paquetes.
 
